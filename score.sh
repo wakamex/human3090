@@ -9,6 +9,12 @@ fi
 # Use the first argument as the filename
 filename="$1"
 
+# run only if the file exists
+if [ ! -f "$filename" ]; then
+    echo "File not found: $filename"
+    exit 1
+fi
+
 # Run the human_eval script with the provided filename
 python -m human_eval.evaluate_functional_correctness "$filename"
 

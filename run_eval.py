@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 from human_eval.data import read_problems
 from openai import OpenAI
+from pydantic_core import ValidationError
+from together import Together
 
 # pylint: disable=redefined-outer-name, line-too-long, missing-module-docstring, invalid-name, import-outside-toplevel
 # ruff: noqa: E501
@@ -14,6 +16,7 @@ load_dotenv(".env")
 OPENAI_KEY = os.getenv("OPENAI_KEY")
 MISTRAL_KEY = os.getenv("MISTRAL_KEY")
 HUGGINGFACE_KEY = os.getenv("HUGGINGFACE_KEY")
+TOGETHER_KEY = os.getenv("TOGETHER_KEY")
 
 
 def clear_output_interactive():
@@ -61,13 +64,15 @@ def sanitize_answer(raw_answer):
     return "\n".join(answer)
 
 
-def parse_completion_stream(completion_stream, task_id, end_after_n_codeblocks=None, framework="ai"):
+def parse_completion_stream(completion_stream, prompt, task_id, end_after_n_codeblocks=None, framework="ai"):
     """Parse a completion stream and return the response."""
     response = []
     finished = False
     while not finished:
         try:
             text = next(completion_stream).choices[0].delta.content if framework == "ai" else next(completion_stream)
+            if text=='':
+                finished = True
             if text:
                 response.append(text)
                 clear_output_robust()
@@ -82,7 +87,9 @@ def parse_completion_stream(completion_stream, task_id, end_after_n_codeblocks=N
                             num_code_blocks += 1
                             if num_code_blocks == end_after_n_codeblocks:
                                 finished = True
-        except StopIteration:
+                        if "</|im_end|>" in line:
+                            finished = True
+        except (StopIteration, ValidationError):
             finished = True
     return "".join(response)
 
@@ -90,28 +97,40 @@ def parse_completion_stream(completion_stream, task_id, end_after_n_codeblocks=N
 def hf(prompt, model, temperature=0.8, task_id=None, end_after_n_codeblocks=None):
     client = InferenceClient(model=model, token=HUGGINGFACE_KEY)
     completion_stream = client.text_generation(prompt=prompt, stream=True, max_new_tokens=1_000, temperature=temperature)
-    return parse_completion_stream(completion_stream, task_id, end_after_n_codeblocks, framework="hf")
+    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id, end_after_n_codeblocks=end_after_n_codeblocks, framework="hf")
 
+def make_kwargs(temperature=0.8, frequency_penalty=None, presence_penalty=None):
+    kwargs = {"temperature": temperature}
+    if presence_penalty is not None:
+        kwargs["presence_penalty"] = presence_penalty
+    if frequency_penalty is not None:
+        kwargs["frequency_penalty"] = frequency_penalty
+    return kwargs
+
+def together(prompt, model, system=None, task_id=None, temperature=0.8, frequency_penalty=None, presence_penalty=None):
+    client = Together(api_key=TOGETHER_KEY)
+    messages = [{"role": "user", "content": prompt}]
+    if system:
+        messages = [{"role": "system", "content": system}] + messages
+    kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
+    # response = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
+    # print(response.choices[0].message.content)
+    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
+    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
 def ai(prompt, system=None, url="http://127.0.0.1:8081/v1", model="llama!", key="na", temperature=0.8, frequency_penalty=None, presence_penalty=None, task_id=None):
     client = OpenAI(base_url=url, api_key=key)
     messages = [{"role": "user", "content": prompt}]
     if system:
         messages = [{"role": "system", "content": system}] + messages
-    kwargs = {
-        "temperature": temperature,
-    }
-    if presence_penalty is not None:
-        kwargs["presence_penalty"] = presence_penalty
-    if frequency_penalty is not None:
-        kwargs["frequency_penalty"] = frequency_penalty
+    kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
-    return parse_completion_stream(completion_stream, task_id)
-
+    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
 problems = read_problems()
 keys = list(problems.keys())
-subset = {key: problems[key] for key in keys}
+start_problem = int(sys.argv[1]) if len(sys.argv) > 1 else 1  # start at 1 normally, or higher if continuing a previous run
+subset = {key: problems[key] for key in keys[start_problem-1:]}
 for task_id in subset:
     raw_prompt = problems[task_id]["prompt"]
     # deepseek (131/164=0.799) old run
@@ -313,17 +332,92 @@ for task_id in subset:
 
     # deepseek (130/164=0.793) q5_k_m
     # ./build/bin/server -ngl 60 -m /models/deepseek-coder-33b-instruct.Q5_K_M.gguf -c 2048 --port 8081 --threads 30 --batch-size 512 --n-predict -1
+    # temperature = 0.0
+    # model = "deepseek"
+    # system = "You are an AI programming assistant, utilizing the Deepseek Coder model, developed by Deepseek Company, and you only answer questions related to computer science. For politically sensitive questions, security and privacy issues, and other non-computer science questions, you will refuse to answer."
+    # system += "\n### Instruction:\n{prompt}\n### Response:\n"
+    # preamble = "### Instruction: Please continue to complete the function.\n```python\n"
+    # postamble = "```\n\n### Response:\n"
+    # prompt = preamble + raw_prompt + postamble
+    # raw_answer = ai(prompt=prompt, system=system, temperature=temperature, task_id=task_id)
+
+    # llama3 () HF API
+    # model = "https://rinz9spvqxw3ueyl.us-east-1.aws.endpoints.huggingface.cloud"
+    # preamble = "You are an AI programming assistant. Please continue to complete the function.\n```python\n"
+    # postamble = "```\n\n### Code Implementation:\n"
+    # function_signature = [l for l in raw_prompt.split("\n") if l.startswith("def ")]
+    # prompt = preamble + raw_prompt + postamble + function_signature[0] + "\n    "
+    # raw_answer = hf(prompt=prompt, model=model, task_id=task_id, end_after_n_codeblocks=2)
+
+    # llama3 (113/164=0.689) Together API cost=$0.07
+    # model = "meta-llama/Llama-3-70b-chat-hf"
+    # system = "### System Prompt\nYou are an intelligent programming assistant.\n"
+    # system += "\n### Instruction:\n{prompt}\n### Response:\n"
+    # preamble = "### Instruction: Please continue to complete the function.\n```python\n"
+    # postamble = "```\n\n### Response:\n"
+    # prompt = system + preamble + raw_prompt + postamble
+    # raw_answer = together(prompt=prompt, model=model, task_id=task_id)
+
+    # llama3 (124/164=0.756) Together API cost=$0.07
+    # model = "meta-llama/Llama-3-70b-chat-hf"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = together(prompt=prompt, model=model, task_id=task_id)
+
+    # dbrx (80/164=0.488) Together API
+    # model = "databricks/dbrx-instruct"
+    # preamble = "Please continue to complete the function.\n```python\n"read
+    # prompt = preamble + raw_prompt
+    # raw_answer = together(prompt=prompt, model=model, task_id=task_id)
+
+    # WizardLM2 () Together API
+    # model = "microsoft/WizardLM-2-8x22B"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = together(prompt=prompt, model=model, task_id=task_id)
+
+    # llama3-70B () IQ3_XS - prompt broken
+    # ./build/bin/server -ngl 60 -m /models/Meta-Llama-3-70B-Instruct.IQ3_XS.gguf -c 2048 --port 8081 --threads 30 --batch-size 512 --n-predict -1
+    # temperature = 0.0
+    # model = "llama"
+    # system = "### System Prompt\nYou are an intelligent programming assistant.\n"
+    # system += "\n### Instruction:\n{prompt}\n### Response:\n"
+    # preamble = "### Instruction: Please continue to complete the function.\n```python\n"
+    # postamble = "```\n\n### Response:\n"
+    # prompt = system + preamble + raw_prompt + postamble
+    # raw_answer = ai(prompt=prompt, system=system, temperature=temperature, task_id=task_id)
+
+    # codeqwen (137/164=0.835) q8
+    # ./build/bin/server -ngl 63 -m /models/codeqwen-1_5-7b-chat-q8_0.gguf -c 2048 --port 8081 --threads 30 --batch-size 512 --n-predict -1
+    # temperature = 0.0
+    # model = "codeqwen"
+    # system = "You are an AI programming assistant."
+    # system += "\n### Instruction:\n{prompt}\n### Response:\n"
+    # preamble = "### Instruction: Please continue to complete the function.\n```python\n"
+    # postamble = "```\n\n### Response:\n"
+    # prompt = preamble + raw_prompt + postamble
+    # raw_answer = ai(prompt=prompt, system=system, temperature=temperature, task_id=task_id)
+
+    # llama3-8B (bad) Q8 - https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF
+    # ./build/bin/server -ngl 63 -m /models/Meta-Llama-3-8B-Instruct-Q8_0.gguf -c 2048 --port 8081 --threads 30 --batch-size 512 --n-predict -1
+    # temperature = 0.0
+    # model = "llama"
+    # system = "You are an AI programming assistant."
+    # system += "\n### Instruction:\n{prompt}\n### Response:\n"
+    # preamble = "### Instruction: Please continue to complete the function.\n```python\n"
+    # postamble = "```\n\n### Response:\n"
+    # prompt = preamble + raw_prompt + postamble
+    # raw_answer = ai(prompt=prompt, system=system, temperature=temperature, task_id=task_id)
+
+    # llama3-8B (86/164=0.524) Q8 - https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF
+    # ./build/bin/server -ngl 63 -m /models/Meta-Llama-3-8B-Instruct-Q8_0.gguf -c 2048 --port 8081 --threads 30 --batch-size 512 --n-predict -1
     temperature = 0.0
-    model = "deepseek"
-    system = "You are an AI programming assistant, utilizing the Deepseek Coder model, developed by Deepseek Company, and you only answer questions related to computer science. For politically sensitive questions, security and privacy issues, and other non-computer science questions, you will refuse to answer."
-    system += "\n### Instruction:\n{prompt}\n### Response:\n"
-    preamble = "### Instruction: Please continue to complete the function.\n```python\n"
-    postamble = "```\n\n### Response:\n"
-    prompt = preamble + raw_prompt + postamble
-    raw_answer = ai(prompt=prompt, system=system, temperature=temperature, task_id=task_id)
+    model = "llama"
+    preamble = "Please continue to complete the function.\n```python\n"
+    prompt = preamble + raw_prompt
+    raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
 
     # sanitize answer, and append it to the jsonl file
     with open(f"{model.split('/', maxsplit=1)[0]}.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(dict(task_id=task_id, completion=sanitize_answer(raw_answer))))
         f.write("\n")
-    
