@@ -21,5 +21,5 @@ Unless otherwise specified:
 | Deepseek            | deepseek-coder-33b-instruct.Q5_K_M.gguf, -ngl 60, a bit slow   |     79.3%  |
 | Llama3*             | together.ai API, Llama-3-70b-chat-hf                           |     75.6%  |
 | DBRX*               | together.ai API, dbrx-instruct                                 |     48.8%  |
-| CodeGwen            | codeqwen-1_5-7b-chat-q8_0.gguf                                 |     83.5%  |
+| CodeQwen            | codeqwen-1_5-7b-chat-q8_0.gguf                                 |     83.5%  |
 | Llama3-8B           | bartowski/Meta-Llama-3-8B-Instruct-GGUF                        |     52.4%  |
