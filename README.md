@@ -1,5 +1,6 @@
 Unless otherwise specified:
 - maximum number of layers offloaded to GPU
+- local models run with llama.cpp server and .gguf formats
 - parameter changes carried over into following tests (temperature, penalties, etc.)
 * denotes non-local for comparison
 
@@ -23,3 +24,6 @@ Unless otherwise specified:
 | DBRX*               | together.ai API, dbrx-instruct                                 |     48.8%  |
 | CodeQwen            | codeqwen-1_5-7b-chat-q8_0.gguf                                 |     83.5%  |
 | Llama3-8B           | bartowski/Meta-Llama-3-8B-Instruct-GGUF                        |     52.4%  |
+| Phi-3-mini          | 4k context, 4bit quantized                                     |     60.4%  |
+| Phi-3-mini          | 4k context, fp16 quantized                                     |     62.2%  |
+| Hermes-Llama        | Hermes-2-Pro-Llama-3-Instruct-Merged-DPO-F16                   |     53.7%  |

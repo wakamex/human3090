@@ -411,8 +411,32 @@ for task_id in subset:
 
     # llama3-8B (86/164=0.524) Q8 - https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF
     # ./build/bin/server -ngl 63 -m /models/Meta-Llama-3-8B-Instruct-Q8_0.gguf -c 2048 --port 8081 --threads 30 --batch-size 512 --n-predict -1
+    # temperature = 0.0
+    # model = "llama"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Phi-3-mini (99/164=0.604) 4k context, 4bit quantized
+    # ./build/bin/server -ngl 63 -m /models/Phi-3-mini-4k-instruct-q4.gguf -c 2048 --port 8081 --threads 30 --batch-size 512 --n-predict -1
+    # temperature = 0.0
+    # model = "phi"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Phi-3-mini (102/164=0.622) 4k context, fp16 quantized
+    # ./build/bin/server -ngl 63 -m /models/Phi-3-mini-4k-instruct-fp16.gguf -c 2048 --port 8081 --threads 30 --batch-size 512 --n-predict -1 
+    # temperature = 0.0
+    # model = "phi"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Hermes-2-Pro-Llama-3-Instruct-Merged-DPO-F16 (88/164=0.537)
+    # ./build/bin/server -ngl 63 -m /seagate/models/Hermes-2-Pro-Llama-3-Instruct-Merged-DPO-F16.gguf -c 2048 --port 8081
     temperature = 0.0
-    model = "llama"
+    model = "hermes"
     preamble = "Please continue to complete the function.\n```python\n"
     prompt = preamble + raw_prompt
     raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
