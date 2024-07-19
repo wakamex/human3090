@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
@@ -52,7 +53,8 @@ def sanitize_answer(raw_answer):
             code_started = True
             answer.append(line)
         # marks start of code, but we don't want to include it
-        elif line.startswith("```python"):
+        # elif line.startswith("```python"):
+        elif "```python" in line:
             code_started = True
         # don't include anything after the code block
         elif line.startswith("```"):
@@ -131,6 +133,7 @@ problems = read_problems()
 keys = list(problems.keys())
 start_problem = int(sys.argv[1]) if len(sys.argv) > 1 else 1  # start at 1 normally, or higher if continuing a previous run
 subset = {key: problems[key] for key in keys[start_problem-1:]}
+start_time = time.time()
 for task_id in subset:
     raw_prompt = problems[task_id]["prompt"]
     # deepseek (131/164=0.799) old run
@@ -435,9 +438,49 @@ for task_id in subset:
 
     # Hermes-2-Pro-Llama-3-Instruct-Merged-DPO-F16 (88/164=0.537)
     # ./build/bin/server -ngl 63 -m /seagate/models/Hermes-2-Pro-Llama-3-Instruct-Merged-DPO-F16.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "hermes"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Codestral-22B-v0.1-hf.Q6_K.gguf (134/164=0.817, 812.53s)
+    # ./build/bin/server -ngl 63 -m /seagate/models/Codestral-22B-v0.1-hf.Q6_K.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "codestral"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Codestral-22B-v0.1-hf.Q8_0.gguf (131/164=0.799, 2918.51s)
+    # ./build/bin/server -ngl 53 -m /seagate/models/Codestral-22B-v0.1-hf.Q8_0.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "codestral"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Codestral-22B-v0.1-hf.fp16.gguf (131/164=0.799, 2918.51s)
+    # ./build/bin/server -ngl 63 -m /seagate/models/Codestral-22B-v0.1-hf.fp16.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "codestral"
+    # preamble = "Please continue to complete the function.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # DeepSeek-Coder-V2-Lite-Instruct-Q8_0_L.gguf (136/164=0.829, 378.86s)
+    # ./llama-server -ngl 63 -m /seagate/models/DeepSeek-Coder-V2-Lite-Instruct-Q8_0_L.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "deepseek2"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # DeepSeek-Coder-V2-Lite-Instruct-IQ4_XS.gguf (135/164=0.823, 417.11s)
+    # ./llama-server -ngl 63 -m /seagate/models/DeepSeek-Coder-V2-Lite-Instruct-IQ4_XS.gguf -c 2048 --port 8081
     temperature = 0.0
-    model = "hermes"
-    preamble = "Please continue to complete the function.\n```python\n"
+    model = "deepseek2"
+    preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
     prompt = preamble + raw_prompt
     raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
 
@@ -445,3 +488,4 @@ for task_id in subset:
     with open(f"{model.split('/', maxsplit=1)[0]}.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(dict(task_id=task_id, completion=sanitize_answer(raw_answer))))
         f.write("\n")
+print(f"finished in {time.time() - start_time:.2f}s")
