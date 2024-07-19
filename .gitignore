@@ -1,2 +1,8 @@
 .venv
 .env
+data/
+.jsonl
+.json
+.bak
+.bak2
+.txt

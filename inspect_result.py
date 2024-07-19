@@ -1,7 +1,12 @@
 import json
 import sys
 
-file_to_inspect = sys.argv[1]
+if len(sys.argv) < 2:
+    print("Usage: python inspect_result.py <filename>")
+    sys.exit(1)
+else:
+    print(f"Inspecting {sys.argv[1]}")
+    file_to_inspect = sys.argv[1]
 
 results_jsonl = []
 with open(file_to_inspect, "r") as f:
