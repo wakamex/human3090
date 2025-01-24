@@ -120,13 +120,13 @@ def together(prompt, model, system=None, task_id=None, temperature=0.8, frequenc
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
-def ai(prompt, system=None, url="http://127.0.0.1:8081/v1", model="llama!", key="na", temperature=0.8, frequency_penalty=None, presence_penalty=None, task_id=None):
+def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", temperature=0.8, max_tokens=1_000, frequency_penalty=None, presence_penalty=None, task_id=None):
     client = OpenAI(base_url=url, api_key=key)
     messages = [{"role": "user", "content": prompt}]
     if system:
         messages = [{"role": "system", "content": system}] + messages
     kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
-    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
+    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=max_tokens, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
 problems = read_problems()
@@ -468,7 +468,7 @@ for task_id in subset:
     # prompt = preamble + raw_prompt
     # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
 
-    # DeepSeek-Coder-V2-Lite-Instruct-Q8_0_L.gguf (136/164=0.829, 378.86s)
+    # DeepSeek-Coder-V2-Lite-Instruct-Q8_0_L.gguf (136/164=0.829, 378.86s, 17GB)
     # ./llama-server -ngl 63 -m /seagate/models/DeepSeek-Coder-V2-Lite-Instruct-Q8_0_L.gguf -c 2048 --port 8081
     # temperature = 0.0
     # model = "deepseek2"
@@ -476,13 +476,151 @@ for task_id in subset:
     # prompt = preamble + raw_prompt
     # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
 
-    # DeepSeek-Coder-V2-Lite-Instruct-IQ4_XS.gguf (135/164=0.823, 417.11s)
+    # DeepSeek-Coder-V2-Lite-Instruct-IQ4_XS.gguf (135/164=0.823, 417.11s, 8.6GB)
     # ./llama-server -ngl 63 -m /seagate/models/DeepSeek-Coder-V2-Lite-Instruct-IQ4_XS.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "deepseek2"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)3
+
+    # Meta-Llama-3.1-8B-Instruct.Q8_0_MaziyarPanahi.gguf (95/164=0.579, 304.09s)
+    # ./llama-server -ngl 80 -m /seagate/models/Meta-Llama-3.1-8B-Instruct.Q8_0_MaziyarPanahi.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "llama31"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Qwen2.5-Coder-14B-Instruct-Q8_0.gguf (137/164=0.835, 409.90s)
+    # ./llama-server -ngl 80 -m /seagate/models/Qwen2.5-Coder-14B-Instruct-Q8_0.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "qwen14"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf (147/164=0.896, 375.33s)
+    # ./llama-server -ngl 80 -m /seagate/models/Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "qwen32"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Qwen2.5-Coder-32B-Instruct-Q5_K_M.gguf (146/164=0.890, 426.62s)
+    # ./llama-server -ngl 80 -m /seagate/models/Qwen2.5-Coder-32B-Instruct-Q5_K_M.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "qwen32q5"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Qwen2.5-Coder-32B-Instruct-Q3_K_M.gguf (143/164=0.872, 435.55s)
+    # ./llama-server -ngl 80 -m /seagate/models/Qwen2.5-Coder-32B-Instruct-Q3_K_M.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "qwen32q3"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # Qwen2.5-Coder-32B-Instruct-Q2_K.gguf (143/164=0.872, 435.55s)
+    # ./llama-server -ngl 80 -m /seagate/models/Qwen2.5-Coder-32B-Instruct-Q2_K.gguf -c 2048 --port 8081
+    # temperature = 0.0
+    # model = "qwen32q2"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+
+    # QwQ-32B-Preview-Q4_K_L.gguf (86/164=0.524 , 11660.46s)
+    # ./build/bin/llama-server -m /seagate/models/QwQ-32B-Preview-Q4_K_L.gguf --port 8083 -ngl 80
+    # temperature = 0.0
+    # max_tokens=10_000
+    # model = "qwq32b"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
+
+    # DeepSeek-R1-Distill-Llama-8B-Q8_0.gguf (122/164=0.744, 8836.76s)
+    # ./build/bin/llama-server -ngl 80 -m /seagate/models/DeepSeek-R1-Distill-Llama-8B-Q8_0.gguf -c 2048 --port 8083
+    # temperature = 0.6
+    # max_tokens=100_000
+    # model = "deepseekr1llama8q8"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
+
+    # DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf (83/164=0.506, 4442.20s)
+    # ./build/bin/llama-server -ngl 80 -m /seagate/models/DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf -c 2048 --port 8083
+    # temperature = 0.0
+    # max_tokens=10_000
+    # model = "deepseekr1qwen1p5q6kl"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
+
+    # DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf (94/164=0.573, 4154.71s)
+    # ./build/bin/llama-server -ngl 80 -m /seagate/models/DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf -c 2048 --port 8083
+    # temperature = 0.6
+    # max_tokens=10_000
+    # model = "deepseekr1qwen1p5q6klt0p6"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
+
+    # DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf (92/164=0.561 , 5501.34s)
+    # ./build/bin/llama-server -ngl 80 -m /seagate/models/DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf -c 2048 --port 8083
+    # temperature = 0.0
+    # max_tokens=10_000
+    # model = "deepseekr1qwen1p5q6klfp1"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id, frequency_penalty=1)
+
+    # DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf (83/164=0.506, 4827.86s)
+    # ./build/bin/llama-server -ngl 80 -m /seagate/models/DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf -c 2048 --port 8083
+    # temperature = 0.6
+    # max_tokens=10_000
+    # model = "deepseekr1qwen1p5q6klfp1t0p6"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id, frequency_penalty=1)
+
+    # DeepSeek-R1-Distill-Qwen-14B-Q6_K_L.gguf (139/164=0.848 , 10444.61s)
+    # ./build/bin/llama-server -m DeepSeek-R1-Distill-Qwen-14B-Q6_K_L.gguf --port 8083 -ngl 80
+    # temperature = 0.0
+    # max_tokens=10_000
+    # model = "deepseekr1qwen14q6kl"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
+
+    # DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf (140/164=0.854 , 15654.79s)
+    # ./build/bin/llama-server -m /seagate/models/DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf --port 8083 -ngl 80
+    # temperature = 0.0
+    # max_tokens=10_000
+    # model = "deepseekr1qwen32q4km"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
+
+    # DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf (148/164=0.902 , 12861.13s)
+    # ./build/bin/llama-server -m /seagate/models/DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf --port 8083 -ngl 80
+    # temperature = 0.6
+    # max_tokens=10_000
+    # model = "deepseekr1qwen32q4kmt0p6"
+    # preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
+    # prompt = preamble + raw_prompt
+    # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
+
+    # DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf (124/164=0.756 , 17181.91s)
+    # ./build/bin/llama-server -m /seagate/models/DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf --port 8083 -ngl 80
     temperature = 0.0
-    model = "deepseek2"
+    max_tokens=10_000
+    model = "deepseekr1qwen32q4kmt0p6fp1"
     preamble = "Please continue to complete the function. Don't respond with anything but code.\n```python\n"
     prompt = preamble + raw_prompt
-    raw_answer = ai(prompt=prompt, temperature=temperature, task_id=task_id)
+    raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id, frequency_penalty=1)
 
     # sanitize answer, and append it to the jsonl file
     with open(f"{model.split('/', maxsplit=1)[0]}.jsonl", "a", encoding="utf-8") as f:

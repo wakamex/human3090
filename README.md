@@ -1,11 +1,13 @@
+## HumanEval on a local 3090 results
+
 Unless otherwise specified:
 - maximum number of layers offloaded to GPU
 - local models run with llama.cpp server and .gguf formats
 - parameter changes carried over into following tests (temperature, penalties, etc.)
-* denotes non-local for comparison
+- `*` denotes non-local for comparison
 
 | Model               | Configuration                                                  | Human Eval | Time taken |
-|---------------------|----------------------------------------------------------------|------------|------------|
+|---------------------|----------------------------------------------------------------|-----------:|-----------:|
 | GPT-4*              | Instruction-style, `temperature=0.2`, `presence_penalty=0`     |     63.4%  |            |
 | GPT-4*              | Completion-style                                               |     84.1%  |            |
 | Mixtral8x7b         | mixtral-8x7b-v0.1.Q5_K_M.gguf                                  |     45.7%  |            |
@@ -30,3 +32,32 @@ Unless otherwise specified:
 | Codestral Q6_K      | Codestral-22B-v0.1-hf.Q6_K.gguf                                |     81.7%  |    812.53s |
 | Codestral Q8        | Codestral-22B-v0.1-hf.Q8_0.gguf                                |     79.9%  |   2918.51s |
 | Deepseek V2         | DeepSeek-Coder-V2-Lite-Instruct-Q8_0_L.gguf                    |     82.9%  |    378.86s |
+| Llama-3.1           | Meta-Llama-3.1-8B-Instruct.Q8_0_MaziyarPanahi.gguf             |     57.9%  |    304.09s |
+| Qwen2.5-Coder-14B   | Qwen2.5-Coder-14B-Instruct-Q8_0.gguf                           |     83.5%  |    409.90s |
+| Qwen2.5-Coder-32B   | Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf                         |     89.6%  |    375.33s |
+| QwQ-32B-Preview     | QwQ-32B-Preview-Q4_K_L.gguf                                    |     52.4%  |  11660.46s |
+| DeepSeek-R1-1.5B    | DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf, `temperature=0.6`   |     57.3%  |   4154.71s |
+| DeepSeek-R1-8B      | DeepSeek-R1-Distill-Llama-8B-Q8_0.gguf, `temperature=0.6`      |     74.4%  |   8836.76s |
+| DeepSeek-R1-14B     | DeepSeek-R1-Distill-Qwen-14B-Q6_K_L.gguf, `temperature=0.0`    |     84.8%  |  10444.61s |
+| DeepSeek-R1-32B     | DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf, `temperature=0.6`    |     90.2%  |  12861.13s |
+
+## DeepSeek-R1 Distilled HumanEval Results
+
+| Model Size | Temperature | Frequency Penalty | Accuracy  | Deathloops | Avg. Chars | Speed (s) |
+|-----------:|------------:|------------------:|----------:|-----------:|-----------:|-----------:|
+| 1.5B       | 0.0         | 0.0               | 50.6%     | 2          | 946        |  4,442    |
+| 1.5B       | 0.6         | 0.0               | 57.3%     | 1          | 1,003      |  4,155    |
+| 1.5B       | 0.0         | 1.0               | 56.1%     | 0          | 417        |  5,501    |
+| 1.5B       | 0.6         | 1.0               | 50.6%     | 0          | 792        |  4,828    |
+| 14B        | 0.0         | 0.0               | 84.8%     | 1          | 759        |  10,445   |
+| 32B        | 0.0         | 0.0               | 85.4%     | 0          | 603        |  15,655   |
+| 32B        | 0.6         | 0.0               | 90.2%     | 0          | 698        |  12,861   |
+| 32B        | 0.0         | 1.0               | 75.6%     | 0          | 645        |  17,182   |
+
+```
+Using the following quants from @Bartowski:
+  1.5B: Qwen-1.5B-Q6_K_L.gguf
+  14B: Qwen-14B-Q4_K_M.gguf
+  32B: Qwen-32B-Q4_K_M.gguf
+Deathloop is a response over 15k chars
+```
