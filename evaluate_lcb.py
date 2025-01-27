@@ -14,6 +14,7 @@ from multiprocessing import Manager, Process
 import tqdm
 import numpy as np
 import itertools
+import argparse
 
 @contextlib.contextmanager
 def time_limit(seconds: float):
@@ -70,56 +71,124 @@ def chdir(root):
         os.chdir(cwd)
 
 def extract_function_name(code: str) -> str:
-    """Extract the name of the first function defined in the code."""
+    """Extract the name of any suitable function defined in the code."""
+    if not code or not code.strip():
+        return None
     try:
-        tree = ast.parse(code)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef):
-                return node.name
+        # Remove any leading empty lines and normalize line endings
+        clean_code = '\n'.join(line.rstrip() for line in code.split('\n')).strip()
+        tree = ast.parse(clean_code)
+        # Find all function definitions
+        functions = [
+            node.name 
+            for node in ast.walk(tree) 
+            if isinstance(node, ast.FunctionDef)
+        ]
+        # Skip main() function if there are other options
+        if len(functions) > 1:
+            non_main = [f for f in functions if f != "main"]
+            if non_main:
+                return non_main[-1]  # Return the last non-main function
+        # Return last function found, or None if no functions
+        return functions[-1] if functions else None
     except:
-        return "solve"  # Default fallback
-    return "solve"  # Default fallback
+        return None  # Failed to parse code
+
+def extract_code_from_text(text: str) -> str:
+    """Extract valid Python code from text that may contain explanations."""
+    if not text or not text.strip():
+        return ""
+
+    lines = text.split('\n')
+    # Find first line that starts with def, import, or from
+    for i, line in enumerate(lines):
+        if line.startswith(('def ', 'import ', 'from ')):
+            code = '\n'.join(lines[i:])
+            # Add missing imports
+            imports = []
+            if 'defaultdict' in code and 'from collections import defaultdict' not in code:
+                imports.append('from collections import defaultdict')
+            if 'bisect_left' in code and 'from bisect import bisect_left' not in code:
+                imports.append('from bisect import bisect_left')
+            return '\n'.join(imports + [''] + [code] if imports else [code])
+    return ""
 
 def unsafe_execute(completion: str, test_case: Dict[str, Any], timeout: float, result: List):
     """Execute untrusted code safely."""
+    if not completion or not completion.strip():
+        result.append("failed: Empty solution")
+        return
+
+    # Try to extract just the code if there's explanatory text
+    completion = extract_code_from_text(completion)
+    if not completion:
+        result.append("failed: No valid code found")
+        return
+
     with create_tempdir():
         try:
             # Create namespace and exec the completion
             namespace = {}
             with swallow_io():
                 with time_limit(timeout):
-                    # First execute the completion to define the function
-                    exec(completion, namespace)
+                    try:
+                        # First execute the completion to define the function
+                        exec(completion, namespace)
+                    except IndentationError as e:
+                        result.append(f"failed: Code indentation error - {str(e)}")
+                        return
+                    except SyntaxError as e:
+                        result.append(f"failed: Code syntax error - {str(e)}")
+                        return
 
                     # Get the function name from the completion
                     func_name = extract_function_name(completion)
+                    if not func_name:
+                        result.append("failed: No function found in solution")
+                        return
                     if func_name not in namespace:
                         result.append(f"failed: Function {func_name} not found")
                         return
 
                     func = namespace[func_name]
 
-                    # Parse inputs and run function
+                    # Parse inputs
                     input_lines = test_case['input'].strip().split('\n')
-                    if len(input_lines) != 2:
-                        result.append(f"failed: Expected 2 input lines, got {len(input_lines)}")
-                        return
-
-                    # Parse inputs as Python literals
-                    coins = json.loads(input_lines[0])
-                    k = json.loads(input_lines[1])
+                    args = []
+                    for line in input_lines:
+                        try:
+                            # Try parsing as JSON string first
+                            arg = json.loads(line)
+                            if isinstance(arg, str):
+                                # If it's a string, try parsing again in case it's a JSON string
+                                try:
+                                    arg = json.loads(arg)
+                                except:
+                                    pass
+                            # If it's a string, remove quotes
+                            if isinstance(arg, str) and arg.startswith('"') and arg.endswith('"'):
+                                arg = arg[1:-1]
+                            args.append(arg)
+                        except:
+                            # If that fails, use the raw value
+                            args.append(line)
 
                     # Run function and compare output
-                    actual = str(func(coins, k))
+                    actual = str(func(*args))
                     expected = test_case['output'].strip()
 
-                    if actual == expected:
+                    # Convert to lowercase for comparison
+                    if actual.lower() == expected.lower():
                         result.append("passed")
                     else:
                         result.append(f"failed: Expected {expected}, got {actual}")
 
         except TimeoutException:
             result.append("timed out")
+        except json.JSONDecodeError as e:
+            result.append(f"failed: Invalid input format - {str(e)}")
+        except TypeError as e:
+            result.append(f"failed: Wrong number of arguments - {str(e)}")
         except BaseException as e:
             result.append(f"failed: {e}")
 
@@ -149,59 +218,99 @@ def check_correctness(completion: str, test_case: Dict[str, Any], timeout: float
         )
 
 def evaluate_functional_correctness(
-    sample_file: str,
+    solutions: str,
+    test_file: str,
     k: List[int] = [1, 10, 100],
     n_workers: int = 4,
     timeout: float = 3.0,
+    debug: bool = False,
 ):
     """
     Evaluates the functional correctness of generated samples.
-    Returns pass@k metrics and writes detailed results to f"{sample_file}_results.jsonl"
+    Returns pass@k metrics and writes detailed results to f"{solutions}_results.jsonl"
     """
-    # Check the generated samples against test suites.
+    # Load all test cases first
+    print("Reading test cases...")
+    test_cases_by_id = {}
+    with open(test_file, "r", encoding="utf-8") as f:
+        for line in f:
+            prob = json.loads(line)
+            test_cases = json.loads(prob["public_test_cases"])
+            test_cases_by_id[prob["question_id"]] = {
+                "test_cases": test_cases,
+                "difficulty": prob.get("difficulty", "unknown")
+            }
+
+    # Load and process all samples
+    print("Reading samples...")
+    all_task_ids = []
     with ThreadPoolExecutor(max_workers=n_workers) as executor:
         futures = []
         completion_id = Counter()
         n_samples = 0
         results = defaultdict(list)
 
-        print("Reading samples...")
-        with open(sample_file, "r", encoding="utf-8") as f:
+        with open(solutions, "r", encoding="utf-8") as f:
             for line in f:
                 data = json.loads(line)
                 task_id = data["task_id"]
+                all_task_ids.append(task_id)
                 completion = data["completion"]
+                question_id = task_id.split('/')[-1]
 
-                # Load the original problem
-                with open("test5.jsonl", "r", encoding="utf-8") as f2:
-                    for line2 in f2:
-                        prob = json.loads(line2)
-                        if prob["question_id"] == task_id.split('/')[-1]:
-                            test_cases = json.loads(prob["public_test_cases"])
-                            for test_case in test_cases:
-                                test_case["task_id"] = task_id
-                                test_case["difficulty"] = prob["difficulty"]
-                                args = (completion, test_case, timeout, completion_id[task_id])
-                                future = executor.submit(check_correctness, *args)
-                                futures.append(future)
-                                completion_id[task_id] += 1
-                                n_samples += 1
-                            break
+                if question_id in test_cases_by_id:
+                    test_info = test_cases_by_id[question_id]
+                    if debug:
+                        print(f"\nDebug - Task {task_id}:")
+                        print(f"  Number of test cases: {len(test_info['test_cases'])}")
+                    for i, test_case in enumerate(test_info['test_cases']):
+                        if debug:
+                            print(f"  Test case {i}: {test_case}")
+                        test_case["task_id"] = task_id
+                        test_case["difficulty"] = test_info["difficulty"]
+                        args = (completion, test_case, timeout, completion_id[task_id])
+                        future = executor.submit(check_correctness, *args)
+                        futures.append(future)
+                        completion_id[task_id] += 1
+                        n_samples += 1
 
         print("Running test suites...")
         for future in tqdm.tqdm(as_completed(futures), total=len(futures)):
             result = future.result()
             results[result["task_id"]].append((result["completion_id"], result))
 
-    # Calculate pass@k.
+    # Process results in task ID order
     total, correct = [], []
-    for result in results.values():
-        result.sort()
-        passed = [r[1]["passed"] for r in result]
-        total.append(len(passed))
-        correct.append(sum(passed))
+    unique_task_ids = list(dict.fromkeys(all_task_ids))  # preserve order, remove duplicates
+    for task_id in unique_task_ids:
+        if task_id in results:
+            result = results[task_id]
+            result.sort()
+            passed = [r[1]["passed"] for r in result]
+            if debug:
+                print(f"\nDebug - Task {task_id}:")
+                print(f"  Result: {result}")
+                print(f"  Passed array: {passed}")
+                print(f"  Total test cases: {len(passed)}")
+                print(f"  All test cases passed: {all(passed)}")
+            total.append(1)  # Each task counts as 1 attempt
+            correct.append(1 if all(passed) else 0)  # Task is correct only if all test cases pass
+        else:
+            if debug:
+                print(f"\nDebug - Task {task_id}: No results")
+            # Empty solution or failed to parse
+            total.append(1)  # One attempt
+            correct.append(0)  # Failed attempt
+
     total = np.array(total)
     correct = np.array(correct)
+
+    if debug:
+        print(f"\nDebug - Unique tasks: {len(total)}")
+        print(f"Debug - Total tasks: {sum(total)}")
+        print(f"Debug - Tasks with all test cases passing: {sum(correct)}")
+        print(f"Debug - Raw correct array: {correct}")
+        print(f"Debug - Raw total array: {total}")
 
     ks = k
     pass_at_k = {f"pass@{k}": estimate_pass_at_k(total, correct, k).mean()
@@ -209,19 +318,20 @@ def evaluate_functional_correctness(
 
     # Save results in same format as original samples
     def combine_results():
-        with open(sample_file, "r", encoding="utf-8") as f:
-            for line in f:
-                sample = json.loads(line)
-                task_id = sample["task_id"]
-                if task_id in results:
-                    result = results[task_id].pop(0)
-                    sample["result"] = result[1]["result"]
-                    sample["passed"] = result[1]["passed"]
-                    sample["difficulty"] = result[1]["difficulty"]
-                yield sample
+        seen_task_ids = set()
+        for task_id in all_task_ids:
+            if task_id in results and task_id not in seen_task_ids:
+                seen_task_ids.add(task_id)
+                for completion_id, result in sorted(results[task_id]):
+                    yield {
+                        "task_id": task_id,
+                        "completion_id": completion_id,
+                        "result": result["result"],
+                        "passed": result["passed"]
+                    }
 
     # Save detailed results
-    out_file = f"{sample_file}_results.jsonl"
+    out_file = f"{solutions}_results.jsonl"
     print(f"Writing results to {out_file}...")
     with open(out_file, "w", encoding="utf-8") as f:
         for sample in tqdm.tqdm(combine_results(), total=n_samples):
@@ -255,11 +365,24 @@ def estimate_pass_at_k(
     return np.array([estimator(int(n), int(c), k) for n, c in zip(num_samples_it, num_correct)])
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python evaluate_lcb.py <completion_file>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("solutions", help="Path to solutions")
+    parser.add_argument("test_file", help="Path to test cases")
+    parser.add_argument("--k", nargs="+", type=int, default=[1, 10, 100], help="Values of k for pass@k")
+    parser.add_argument("--n-workers", type=int, default=4, help="Number of workers")
+    parser.add_argument("--timeout", type=float, default=3.0, help="Timeout in seconds")
+    parser.add_argument("--debug", action="store_true", help="Enable debug prints")
+    args = parser.parse_args()
 
-    results = evaluate_functional_correctness(sys.argv[1])
+    results = evaluate_functional_correctness(
+        args.solutions,
+        args.test_file,
+        k=args.k,
+        n_workers=args.n_workers,
+        timeout=args.timeout,
+        debug=args.debug,
+    )
+
     print(f"Results: {results}")
 
 if __name__ == "__main__":
