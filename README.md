@@ -61,3 +61,14 @@ Using the following quants from @Bartowski:
   32B: Qwen-32B-Q4_K_M.gguf
 Deathloop is a response over 15k chars
 ```
+
+## API Results
+
+| Model              | Configuration                                                  | Human Eval | Time taken |
+|--------------------|----------------------------------------------------------------|-----------:|-----------:|
+| gpt-4o-2024-11-20* | Don't respond with anything but code.                          |     86.2%  |    174.97s |
+| gpt-4o-2024-11-20* |                                                                |     94.5%  |    661.51s |
+| Claude 3.5 Sonnet  | OpenRouter                                                     |     95.1%  |   1673.41s |
+| Deepseek-R1        | OpenRouter                                                     |     31.1%  |  15359.62s |
+| Deepseek-R1        | OpenRouter. "Don't respond with anything but code"             |     79.3%  |   9819.20s |
+| Deepseek-R1        | api.deepseek.com                                               |     97.6%  |   7625.37s |

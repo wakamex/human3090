@@ -27,15 +27,32 @@ with open(file_to_inspect, "r", encoding="utf-8") as f:
     results_jsonl.extend(json.loads(line) for line in f)
 
 # %%
-score = 0
 fails = []
+difficulty_scores = {}
 for result in results_jsonl:
-    if result["passed"] is True:
-        score += 1
+    difficulty = result.get('difficulty', 'unknown')
+    if difficulty not in difficulty_scores:
+        difficulty_scores[difficulty] = {'passed': 0, 'total': 0}
+
+    difficulty_scores[difficulty]['total'] += 1
+    if result['passed']:
+        difficulty_scores[difficulty]['passed'] += 1
     else:
-        fails.append(result["task_id"].split("/")[-1])
-print(f"Fails: {','.join(fails)}")
-print(f"Score: {score}/{len(results_jsonl)}={score/len(results_jsonl):.3f}")
+        fails.append(result['task_id'].split("/")[-1])
+
+print("Fails:", ", ".join(fails) if fails else "None")
+
+# Print overall score
+total_passed = sum(d['passed'] for d in difficulty_scores.values())
+total_problems = sum(d['total'] for d in difficulty_scores.values())
+print(f"\nOverall Score: {total_passed}/{total_problems}={total_passed/total_problems:.3f}")
+
+# Print scores by difficulty
+print("\nScores by difficulty:")
+for difficulty, scores in sorted(difficulty_scores.items()):
+    passed = scores['passed']
+    total = scores['total']
+    print(f"{difficulty}: {passed}/{total}={passed/total:.3f}")
 
 # %%
 # plot histogram of character length of each result
