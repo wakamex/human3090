@@ -327,7 +327,8 @@ def evaluate_functional_correctness(
                         "task_id": task_id,
                         "completion_id": completion_id,
                         "result": result["result"],
-                        "passed": result["passed"]
+                        "passed": result["passed"],
+                        "difficulty": result["difficulty"]
                     }
 
     # Save detailed results
