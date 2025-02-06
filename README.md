@@ -6,40 +6,44 @@ Unless otherwise specified:
 - parameter changes carried over into following tests (temperature, penalties, etc.)
 - `*` denotes non-local for comparison
 
-| Model               | Configuration                                                  | Human Eval | Time taken |
-|---------------------|----------------------------------------------------------------|-----------:|-----------:|
-| GPT-4*              | Instruction-style, `temperature=0.2`, `presence_penalty=0`     |     63.4%  |            |
-| GPT-4*              | Completion-style                                               |     84.1%  |            |
-| Mixtral8x7b         | mixtral-8x7b-v0.1.Q5_K_M.gguf                                  |     45.7%  |            |
-| Mistral-medium*     |                                                                |     62.2%  |            |
-| Llama2*             | HF API, CodeLlama-34b-Instruct-hf                              |     42.1%  |            |
-| Mistral-large*      |                                                                |     73.2%  |            |
-| WizardLM2           | WizardLM-2-8x22B.IQ3_XS-00001-of-00005.gguf                    |     56.7%  |            |
-| Wizardcoder         | wizardcoder-33b-v1.1.Q4_K_M.gguf, `temperature=0.0`            |     73.8%  |            |
-| Wizardcoder-Python  | Q4_K_M. quant, Modified prompt                                 |     57.3%  |            |
-| CodeFuse-Deepseek   | CodeFuse-DeepSeek-33B-Q4_K_M.gguf                              |     68.7%  |            |
-| Deepseek            | deepseek-coder-33b-instruct.Q4_K_M.gguf                        |     79.9%  |            |
-| OpenCodeInterpreter | ggml-opencodeinterpreter-ds-33b-q8_0.gguf, -ngl 40             |    Failed  |            |
-| Deepseek            | ggml-deepseek-coder-33b-instruct-q4_k_m.gguf                   |     78.7%  |            |
-| Deepseek            | deepseek-coder-33b-instruct.Q5_K_M.gguf, -ngl 60, a bit slow   |     79.3%  |            |
-| Llama3*             | together.ai API, Llama-3-70b-chat-hf                           |     75.6%  |            |
-| DBRX*               | together.ai API, dbrx-instruct                                 |     48.8%  |            |
-| CodeQwen            | codeqwen-1_5-7b-chat-q8_0.gguf                                 |     83.5%  |            |
-| Llama3-8B           | bartowski/Meta-Llama-3-8B-Instruct-GGUF                        |     52.4%  |            |
-| Phi-3-mini          | 4k context, 4bit quantized                                     |     60.4%  |            |
-| Phi-3-mini          | 4k context, fp16 quantized                                     |     62.2%  |            |
-| Hermes-Llama        | Hermes-2-Pro-Llama-3-Instruct-Merged-DPO-F16                   |     53.7%  |            |
-| Codestral Q6_K      | Codestral-22B-v0.1-hf.Q6_K.gguf                                |     81.7%  |    812.53s |
-| Codestral Q8        | Codestral-22B-v0.1-hf.Q8_0.gguf                                |     79.9%  |   2918.51s |
-| Deepseek V2         | DeepSeek-Coder-V2-Lite-Instruct-Q8_0_L.gguf                    |     82.9%  |    378.86s |
-| Llama-3.1           | Meta-Llama-3.1-8B-Instruct.Q8_0_MaziyarPanahi.gguf             |     57.9%  |    304.09s |
-| Qwen2.5-Coder-14B   | Qwen2.5-Coder-14B-Instruct-Q8_0.gguf                           |     83.5%  |    409.90s |
-| Qwen2.5-Coder-32B   | Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf                         |     89.6%  |    375.33s |
-| QwQ-32B-Preview     | QwQ-32B-Preview-Q4_K_L.gguf                                    |     52.4%  |  11660.46s |
-| DeepSeek-R1-1.5B    | DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf, `temperature=0.6`   |     57.3%  |   4154.71s |
-| DeepSeek-R1-8B      | DeepSeek-R1-Distill-Llama-8B-Q8_0.gguf, `temperature=0.6`      |     74.4%  |   8836.76s |
-| DeepSeek-R1-14B     | DeepSeek-R1-Distill-Qwen-14B-Q6_K_L.gguf, `temperature=0.0`    |     84.8%  |  10444.61s |
-| DeepSeek-R1-32B     | DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf, `temperature=0.6`    |     90.2%  |  12861.13s |
+Polyglot refers to [Aider's Polyglot benchmark](https://aider.chat/docs/leaderboards/)
+
+| Model               | Configuration                                                  | Human Eval | Time taken | Polyglot |
+|---------------------|----------------------------------------------------------------|-----------:|-----------:|---------:|
+| GPT-4*              | Instruction-style, `temperature=0.2`, `presence_penalty=0`     |     63.4%  |            |         |
+| GPT-4*              | Completion-style                                               |     84.1%  |            |         |
+| Mixtral8x7b         | mixtral-8x7b-v0.1.Q5_K_M.gguf                                  |     45.7%  |            |         |
+| Mistral-medium*     |                                                                |     62.2%  |            |         |
+| Llama2*             | HF API, CodeLlama-34b-Instruct-hf                              |     42.1%  |            |         |
+| Mistral-large*      |                                                                |     73.2%  |            |         |
+| WizardLM2           | WizardLM-2-8x22B.IQ3_XS-00001-of-00005.gguf                    |     56.7%  |            |         |
+| Wizardcoder         | wizardcoder-33b-v1.1.Q4_K_M.gguf, `temperature=0.0`            |     73.8%  |            |         |
+| Wizardcoder-Python  | Q4_K_M. quant, Modified prompt                                 |     57.3%  |            |         |
+| CodeFuse-Deepseek   | CodeFuse-DeepSeek-33B-Q4_K_M.gguf                              |     68.7%  |            |         |
+| Deepseek            | deepseek-coder-33b-instruct.Q4_K_M.gguf                        |     79.9%  |            |         |
+| OpenCodeInterpreter | ggml-opencodeinterpreter-ds-33b-q8_0.gguf, -ngl 40             |    Failed  |            |         |
+| Deepseek            | ggml-deepseek-coder-33b-instruct-q4_k_m.gguf                   |     78.7%  |            |         |
+| Deepseek            | deepseek-coder-33b-instruct.Q5_K_M.gguf, -ngl 60, a bit slow   |     79.3%  |            |         |
+| Llama3*             | together.ai API, Llama-3-70b-chat-hf                           |     75.6%  |            |         |
+| DBRX*               | together.ai API, dbrx-instruct                                 |     48.8%  |            |         |
+| CodeQwen            | codeqwen-1_5-7b-chat-q8_0.gguf                                 |     83.5%  |            |         |
+| Llama3-8B           | bartowski/Meta-Llama-3-8B-Instruct-GGUF                        |     52.4%  |            |         |
+| Phi-3-mini          | 4k context, 4bit quantized                                     |     60.4%  |            |         |
+| Phi-3-mini          | 4k context, fp16 quantized                                     |     62.2%  |            |         |
+| Hermes-Llama        | Hermes-2-Pro-Llama-3-Instruct-Merged-DPO-F16                   |     53.7%  |            |         |
+| Codestral Q6_K      | Codestral-22B-v0.1-hf.Q6_K.gguf                                |     81.7%  |    812.53s |         |
+| Codestral Q8        | Codestral-22B-v0.1-hf.Q8_0.gguf                                |     79.9%  |   2918.51s |         |
+| Deepseek V2         | DeepSeek-Coder-V2-Lite-Instruct-Q8_0_L.gguf                    |     82.9%  |    378.86s |         |
+| Llama-3.1           | Meta-Llama-3.1-8B-Instruct.Q8_0_MaziyarPanahi.gguf             |     57.9%  |    304.09s |         |
+| Qwen2.5-Coder-14B   | Qwen2.5-Coder-14B-Instruct-Q8_0.gguf                           |     83.5%  |    409.90s |         |
+| Qwen2.5-Coder-32B   | Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf                         |     89.6%  |    375.33s |         |
+| QwQ-32B-Preview     | QwQ-32B-Preview-Q4_K_L.gguf                                    |     52.4%  |  11660.46s |         |
+| DeepSeek-R1-1.5B    | DeepSeek-R1-Distill-Qwen-1.5B-Q6_K_L.gguf, `temperature=0.6`   |     57.3%  |   4154.71s |         |
+| DeepSeek-R1-8B      | DeepSeek-R1-Distill-Llama-8B-Q8_0.gguf, `temperature=0.6`      |     74.4%  |   8836.76s |         |
+| DeepSeek-R1-14B     | DeepSeek-R1-Distill-Qwen-14B-Q6_K_L.gguf, `temperature=0.0`    |     84.8%  |  10444.61s |         |
+| DeepSeek-R1-32B     | DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf, `temperature=0.6`    |     90.2%  |  12861.13s |     5.3 |
+| Mistral-Small-24B   | Mistral-Small-24B-Instruct-2501-Q4_K_M.gguf                    |     86.6%  |   1734.44s |         |
+| Simplescaling S1    | simplescaling_s1-32B-Q5_K_S.gguf                               |     68.3%  |   1140.21s |         |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
@@ -72,3 +76,4 @@ Deathloop is a response over 15k chars
 | Deepseek-R1        | OpenRouter                                                     |     31.1%  |  15359.62s |
 | Deepseek-R1        | OpenRouter. "Don't respond with anything but code"             |     79.3%  |   9819.20s |
 | Deepseek-R1        | api.deepseek.com                                               |     97.6%  |   7625.37s |
+| o3-mini            |                                                                |     96.3%  |   1140.21s |

@@ -111,6 +111,14 @@ def make_kwargs(temperature=0.8, frequency_penalty=None, presence_penalty=None):
         kwargs["frequency_penalty"] = frequency_penalty
     return kwargs
 
+def make_kwargs_o3(frequency_penalty=None, presence_penalty=None):
+    kwargs = {}
+    if presence_penalty is not None:
+        kwargs["presence_penalty"] = presence_penalty
+    if frequency_penalty is not None:
+        kwargs["frequency_penalty"] = frequency_penalty
+    return kwargs
+
 def together(prompt, model, system=None, task_id=None, temperature=0.8, frequency_penalty=None, presence_penalty=None):
     client = Together(api_key=TOGETHER_KEY)
     messages = [{"role": "user", "content": prompt}]
@@ -122,13 +130,22 @@ def together(prompt, model, system=None, task_id=None, temperature=0.8, frequenc
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
-def ai(prompt, system=None, url="http://127.0.0.1:8084/v1", model="llama!", key="na", temperature=0.8, max_tokens=1_000, frequency_penalty=None, presence_penalty=None, task_id=None):
+def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", temperature=0.8, max_tokens=1_000, frequency_penalty=None, presence_penalty=None, task_id=None):
     client = OpenAI(base_url=url, api_key=key)
     messages = [{"role": "user", "content": prompt}]
     if system:
         messages = [{"role": "system", "content": system}] + messages
     kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=max_tokens, **kwargs)
+    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
+
+def ai_o3(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", frequency_penalty=None, presence_penalty=None, task_id=None):
+    client = OpenAI(base_url=url, api_key=key)
+    messages = [{"role": "user", "content": prompt}]
+    if system:
+        messages = [{"role": "system", "content": system}] + messages
+    kwargs = make_kwargs_o3(frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
+    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
 def main():
@@ -671,13 +688,46 @@ def main():
         # raw_answer = ai(prompt=prompt,url=url,model=model,key=key,temperature=temperature,task_id=task_id)
 
         # deepseek direct (160/164=0.976 , 7625.37s)
-        url = "https://api.deepseek.com/"
-        model = "deepseek-reasoner"
-        key = DEEPSEEK_KEY
+        # url = "https://api.deepseek.com/"
+        # model = "deepseek-reasoner"
+        # key = DEEPSEEK_KEY
+        # temperature = 0.0
+        # preamble = "Please continue to complete the function.\n```python\n"
+        # prompt = preamble + raw_prompt
+        # raw_answer = ai(prompt=prompt,url=url,model=model,key=key,temperature=temperature,task_id=task_id)
+
+        # Mistral-Small-Q3_K_L (143/164=0.872 , 2085.95s)
+        # ./build/bin/llama-server -m /seagate/models/Mistral-Small-24B-Instruct-2501-Q3_K_L.gguf --port 8084 -ngl 80
+        # model = "mistralsmallq3kl"
+        # temperature = 0.0
+        # preamble = "Please continue to complete the function.\n```python\n"
+        # prompt = preamble + raw_prompt
+        # raw_answer = ai(prompt=prompt,model=model,temperature=temperature,task_id=task_id)
+
+        # Mistral-Small-Q4_K_M (142/164=0.866, 1734.44s)
+        # ./build/bin/llama-server -m /seagate/models/Mistral-Small-24B-Instruct-2501-Q4_K_M.gguf --port 8084 -ngl 80
+        # model = "mistralsmallq4km"
+        # temperature = 0.0
+        # preamble = "Please continue to complete the function.\n```python\n"
+        # prompt = preamble + raw_prompt
+        # raw_answer = ai(prompt=prompt,model=model,temperature=temperature,task_id=task_id)
+
+        # o3-mini (158/164=0.963, 1140.21s)
+        # url = "https://api.openai.com/v1/"
+        # model = "o3-mini-2025-01-31"
+        # key = OPENAI_KEY
+        # preamble = "Please continue to complete the function.\n```python\n"
+        # prompt = preamble + raw_prompt
+        # raw_answer = ai_o3(prompt=prompt,url=url,model=model,key=key,task_id=task_id)
+
+        # simplescaling_s1-32B-Q4_1.gguf (0.683 , 16859.82s)
+        # ./build/bin/llama-server -m /seagate/models/simplescaling_s1-32B-Q4_1.gguf --port 8083 -ngl 80
         temperature = 0.0
+        max_tokens=10_000
+        model = "s1"
         preamble = "Please continue to complete the function.\n```python\n"
         prompt = preamble + raw_prompt
-        raw_answer = ai(prompt=prompt,url=url,model=model,key=key,temperature=temperature,task_id=task_id)
+        raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id, frequency_penalty=1)
 
         # sanitize answer, and append it to the jsonl file
         with open(f"{model.split('/')[-1]}.jsonl", "a", encoding="utf-8") as f:
