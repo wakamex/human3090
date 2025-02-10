@@ -42,8 +42,9 @@ Polyglot refers to [Aider's Polyglot benchmark](https://aider.chat/docs/leaderbo
 | DeepSeek-R1-8B      | DeepSeek-R1-Distill-Llama-8B-Q8_0.gguf, `temperature=0.6`      |     74.4%  |   8836.76s |         |
 | DeepSeek-R1-14B     | DeepSeek-R1-Distill-Qwen-14B-Q6_K_L.gguf, `temperature=0.0`    |     84.8%  |  10444.61s |         |
 | DeepSeek-R1-32B     | DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf, `temperature=0.6`    |     90.2%  |  12861.13s |     5.3 |
-| Mistral-Small-24B   | Mistral-Small-24B-Instruct-2501-Q4_K_M.gguf                    |     86.6%  |   1734.44s |         |
+| Mistral-Small-24B   | Mistral-Small-24B-Instruct-2501-Q6_K.gguf                      |     89.0%  |   2365.32s |         |
 | Simplescaling S1    | simplescaling_s1-32B-Q5_K_S.gguf                               |     68.3%  |   1140.21s |         |
+| Tqwendo             | tqwendo-36b-Q4_K_L.gguf                                        |     87.8%  |   1916.67s |         |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 

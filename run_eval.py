@@ -722,12 +722,28 @@ def main():
 
         # simplescaling_s1-32B-Q4_1.gguf (0.683 , 16859.82s)
         # ./build/bin/llama-server -m /seagate/models/simplescaling_s1-32B-Q4_1.gguf --port 8083 -ngl 80
+        # temperature = 0.0
+        # max_tokens=10_000
+        # model = "s1"
+        # preamble = "Please continue to complete the function.\n```python\n"
+        # prompt = preamble + raw_prompt
+        # raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id, frequency_penalty=1)
+
+        # Mistral-Small-24B-Instruct-2501-Q6_K.gguf (0.890 , 2365.32s)
+        # ./build/bin/llama-server -m /seagate/models/Mistral-Small-24B-Instruct-2501-Q6_K.gguf --port 8083 -ngl 80
+        # model = "mistralsmallq6k"
+        # temperature = 0.0
+        # preamble = "Please continue to complete the function.\n```python\n"
+        # prompt = preamble + raw_prompt
+        # raw_answer = ai(prompt=prompt,model=model,temperature=temperature,task_id=task_id)
+
+        # tqwendo-36b-Q4_K_L.gguf (144/164=0.878 , 1916.67s)
+        # ./build/bin/llama-server -m /seagate/models/tqwendo-36b-Q4_K_L.gguf --port 8083 -ngl 80
+        model = "tqwendo"
         temperature = 0.0
-        max_tokens=10_000
-        model = "s1"
         preamble = "Please continue to complete the function.\n```python\n"
         prompt = preamble + raw_prompt
-        raw_answer = ai(prompt=prompt, temperature=temperature, max_tokens=max_tokens, task_id=task_id, frequency_penalty=1)
+        raw_answer = ai(prompt=prompt,model=model,temperature=temperature,task_id=task_id)
 
         # sanitize answer, and append it to the jsonl file
         with open(f"{model.split('/')[-1]}.jsonl", "a", encoding="utf-8") as f:
