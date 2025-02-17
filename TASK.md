@@ -46,10 +46,11 @@ JSON structure for storing benchmark results:
 ```bash
 ./bench_runner.py \
     --model /path/to/model.gguf \
-    --gpu-layers 80 \
+    --gpu-layers 40 \
     --benchmark human_eval \
     --script run_eval.py \
-    --output results.jsonl
+    --temperature 0.0 \
+    --max-tokens 1000
 ```
 
 ## Implementation Progress
@@ -59,12 +60,14 @@ JSON structure for storing benchmark results:
 ✓ 3. Added results storage and processing
 ✓ 4. Created HumanEval parser
 ✓ 5. Added basic CLI interface
+✓ 6. Added model name handling and README.md updates
+✓ 7. Successfully ran and validated HumanEval benchmark
 
 ## Next Steps
 
-1. [ ] Test current implementation with run_eval.py
-2. [ ] Add README.md table updater
-3. [ ] Add support for run_lcb.py
-4. [ ] Add benchmark-specific CLI arguments
-5. [ ] Add error handling for server startup
-6. [ ] Add progress reporting during long runs
+1. [ ] Add support for run_lcb.py
+2. [ ] Add benchmark-specific CLI arguments (context length, top_p)
+3. [ ] Add error handling for server startup
+4. [ ] Add progress reporting during long runs
+5. [ ] Consider parallel processing for faster evaluation
+6. [ ] Consider batched inference if beneficial
