@@ -149,12 +149,12 @@ def ai_o3(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", k
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
-def main(model, temperature, preamble = "Please continue to complete the function.\n```python\n", max_tokens = 1_000, start_problem = 1):
+def main(model, temperature, preamble = "Please continue to complete the function.\n```python\n", max_tokens = 1_000, start_problem = 1, end_problem = None):
     # Get model shortname (e.g. 'smollm2-1.7b-instruct-q4_k_m' from 'smollm2-1.7b-instruct-q4_k_m.gguf')
     model_shortname = os.path.splitext(os.path.basename(model))[0]
     problems = read_problems()
     keys = list(problems.keys())
-    subset = {key: problems[key] for key in keys[start_problem-1:]}
+    subset = {key: problems[key] for key in keys[start_problem-1:end_problem]}
     start_time = time.time()
     for task_id in subset:
         raw_prompt = problems[task_id]["prompt"]
@@ -174,6 +174,8 @@ if __name__ == "__main__":
     parser.add_argument("--preamble", default="Please continue to complete the function.\n```python\n", help="Optional preamble text")
     parser.add_argument("--max-tokens", type=int, default=512, help="Maximum tokens per completion")
     parser.add_argument("--start-problem", type=int, default=1, help="Problem index to start from (1-based)")
+    parser.add_argument("--end-problem", type=int, default=None, help="Problem index to end at (1-based)")
+    parser.add_argument("--stream", action="store_true", help="Use streaming output for sglang server")
 
     args = parser.parse_args()
     main(
@@ -181,5 +183,6 @@ if __name__ == "__main__":
         temperature=args.temperature,
         preamble=args.preamble,
         max_tokens=args.max_tokens,
-        start_problem=args.start_problem
+        start_problem=args.start_problem,
+        end_problem=args.end_problem
     )

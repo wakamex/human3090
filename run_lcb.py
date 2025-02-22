@@ -57,6 +57,7 @@ def main(model: str,
          temperature: float = 0.0,
          max_tokens: int = 1_000,
          start_problem: int = 1,
+         end_problem: int = None,
          problems_file: str = "test5.jsonl",
          start_date: str = None,
          end_date: str = None):
@@ -85,12 +86,12 @@ def main(model: str,
         print(f"No problems found{date_range}")
         return
 
-    # Sort and apply start_problem
+    # Sort and apply start_problem and end_problem
     keys = sorted(filtered_problems.keys())
-    subset = {key: filtered_problems[key] for key in keys[start_problem-1:]}
+    subset = {key: filtered_problems[key] for key in keys[start_problem-1:end_problem]}
 
     print(f"Found {len(filtered_problems)} problems{date_range}")
-    print(f"Processing {len(subset)} problems starting from index {start_problem}")
+    print(f"Processing {len(subset)} problems starting from index {start_problem} and ending at index {end_problem}")
 
     start_time = time.time()
 
@@ -122,6 +123,7 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.0, help="Temperature for sampling")
     parser.add_argument("--max-tokens", type=int, default=1_000, help="Maximum tokens per completion")
     parser.add_argument("--start-problem", type=int, default=1, help="Problem index to start from (1-based)")
+    parser.add_argument("--end-problem", type=int, default=None, help="Problem index to end at (1-based)")
     parser.add_argument("--problems-file", default="test5.jsonl", help="Problems file (e.g., test5.jsonl)")
     parser.add_argument("--start-date", help="Start date for LCB problems (YYYY-MM-DD)")
     parser.add_argument("--end-date", help="End date for LCB problems (YYYY-MM-DD)")
@@ -132,6 +134,7 @@ if __name__ == "__main__":
         temperature=args.temperature,
         max_tokens=args.max_tokens,
         start_problem=args.start_problem,
+        end_problem=args.end_problem,
         problems_file=args.problems_file,
         start_date=args.start_date,
         end_date=args.end_date

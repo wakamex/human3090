@@ -1,0 +1,23 @@
+{
+  "runs": [
+    {
+      "timestamp": "2025-02-22T18:33:40.594869",
+      "benchmark": "human_eval",
+      "model": "smollm2-1.7b-instruct-q4_k_m",
+      "command": ".venv/bin/python bench_runner.py --model /seagate/models/smollm2-1.7b-instruct-q4_k_m.gguf --gpu-layers 40 --benchmark human_eval --script run_eval.py --temperature 0.0 --max-tokens 1000 --no-readme False --start-problem 163",
+      "results": {
+        "score": 0.0,
+        "time_taken": 2.9553327560424805,
+        "total_passed": 0,
+        "total_problems": 2,
+        "difficulty_scores": {
+          "unknown": {
+            "passed": 0,
+            "total": 2
+          }
+        },
+        "failed_tasks": ["HumanEval/162","HumanEval/163"]
+      }
+    }
+  ]
+}

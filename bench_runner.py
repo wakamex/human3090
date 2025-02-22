@@ -45,14 +45,22 @@ class ReadmeUpdater:
         if table_start is None:
             raise ValueError(f"Could not find {benchmark} results table in README.md")
 
+        # Find the end of the table
+        table_end = table_start
+        for i in range(table_start + 1, len(lines)):
+            if "|" not in lines[i]:
+                table_end = i
+                break
+
         # Create new row
         model_name = results["model"]
         score = results["results"]["score"]
         time_taken = results["results"]["time_taken"]
-        new_row = f"| {model_name} |  | {score:.1f}% | {time_taken:.2f}s |\n"
+        model_short_name = model_name.split('-')[0]
+        new_row = f"| {model_short_name:<19} | {model_name:<62} | {score:>9.1f}%  | {time_taken:>9.2f}s |\n"
 
-        # Insert the row after the header
-        lines.insert(table_start + 2, new_row)
+        # Insert the row at the end of the table
+        lines.insert(table_end, new_row)
 
         # Write back to file
         with open(self.readme_path, 'w', encoding='utf-8') as f:
@@ -135,24 +143,29 @@ class BenchmarkRunner:
             return json.load(f)
 
     def _save_results(self, results: Dict[str, Any]):
-        """Save results to file."""
-        class CompactJSONEncoder(json.JSONEncoder):
-            def encode(self, obj):
-                if isinstance(obj, dict):
-                    # Keep failed_tasks list on one line
-                    if 'failed_tasks' in obj:
-                        failed = obj['failed_tasks']
-                        obj = {**obj}
-                        del obj['failed_tasks']
-                        result = super().encode(obj)[:-1]  # Remove closing brace
-                        return result + ', "failed_tasks": ' + self.encode(failed) + '}'
-                    return super().encode(obj)
-                if isinstance(obj, list):
-                    return '[' + ', '.join(self.encode(item) for item in obj) + ']'
-                return super().encode(obj)
+        """Save results to file with failed_tasks as a JSON list on a single line."""
+        # Step 1: Process each run to replace 'failed_tasks' with placeholders
+        compact_list = []
+        for i, run in enumerate(results['runs']):
+            if 'results' in run and 'failed_tasks' in run['results']:
+                failed_tasks = run['results']['failed_tasks']
+                # Serialize failed_tasks compactly
+                compact = json.dumps(failed_tasks, separators=(',', ':'))
+                compact_list.append(compact)
+                # Set a unique placeholder
+                run['results']['failed_tasks'] = f"__FAILED_TASKS_PLACEHOLDER_{i}__"
 
+        # Step 2: Serialize the entire results with indent=2
+        json_str = json.dumps(results, indent=2)
+
+        # Step 3: Replace each placeholder with the corresponding compact version
+        for i, compact in enumerate(compact_list):
+            placeholder = f'"__FAILED_TASKS_PLACEHOLDER_{i}__"'
+            json_str = json_str.replace(placeholder, compact)
+
+        # Step 4: Write to file
         with open(self.results_file, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2, cls=CompactJSONEncoder)
+            f.write(json_str)
 
     def _process_results(self, 
                         benchmark: str,
@@ -197,6 +210,10 @@ class BenchmarkRunner:
                    "--max-tokens", str(cli_args['max_tokens'])]
             if cli_args.get('preamble'):
                 cmd.extend(["--preamble", cli_args['preamble']])
+            if cli_args.get('start_problem', 1) > 1:
+                cmd.extend(["--start-problem", str(cli_args['start_problem'])])
+            if cli_args.get('end_problem'):
+                cmd.extend(["--end-problem", str(cli_args['end_problem'])])
 
             # Add LCB-specific arguments
             if cli_args['benchmark'] == "lcb":
@@ -207,8 +224,6 @@ class BenchmarkRunner:
                     cmd.extend(["--start-date", cli_args['start_date']])
                 if cli_args.get('end_date'):
                     cmd.extend(["--end-date", cli_args['end_date']])
-                if cli_args.get('start_problem', 1) > 1:
-                    cmd.extend(["--start-problem", str(cli_args['start_problem'])])
             subprocess.run(cmd, check=True)
 
             # Get model shortname (e.g. 'smollm2-1.7b-instruct-q4_k_m' from 'smollm2-1.7b-instruct-q4_k_m.gguf')
@@ -240,7 +255,7 @@ class BenchmarkRunner:
         self._save_results(all_results)
 
         # Update README if requested
-        if cli_args['update_readme']:
+        if not cli_args['no_readme']:
             self.readme_updater.update_table(run_results)
 
         return run_results
@@ -256,6 +271,7 @@ def main():
     parser.add_argument("--max-tokens", type=int, default=512, help="Maximum tokens per completion")
     parser.add_argument("--no-readme", action="store_true", help="Don't update README.md")
     parser.add_argument("--start-problem", type=int, default=1, help="Problem index to start from (1-based)")
+    parser.add_argument("--end-problem", type=int, help="Problem index to end at (1-based)")
 
     # LCB-specific arguments
     parser.add_argument("--problems-file", help="Problems file for LCB benchmark (e.g., test5.jsonl)")
@@ -267,10 +283,7 @@ def main():
     runner = BenchmarkRunner(args.model, args.gpu_layers)
     try:
         # Pass args for command reconstruction and execution
-        cli_args = vars(args)
-        cli_args['update_readme'] = not args.no_readme  # Convert no_readme to update_readme
-        results = runner.run_benchmark(cli_args)
-        print(json.dumps(results, indent=2))
+        runner.run_benchmark(vars(args))
     except Exception as e:
         print(f"Error running benchmark: {e}", file=sys.stderr)
         sys.exit(1)
