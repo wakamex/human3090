@@ -8,6 +8,8 @@ Unless otherwise specified:
 
 | Model               | Configuration                                                  | Human Eval | Time taken |
 |---------------------|----------------------------------------------------------------|-----------:|-----------:|
+| smollm2-1.7b-instruct-q4_k_m |  | 15.2% | 5.36s |
+| smollm2-1.7b-instruct-q4_k_m |  | 15.2% | 38.32s |
 | GPT-4*              | Instruction-style, `temperature=0.2`, `presence_penalty=0`     |     63.4%  |            |
 | GPT-4*              | Completion-style                                               |     84.1%  |            |
 | Mixtral8x7b         | mixtral-8x7b-v0.1.Q5_K_M.gguf                                  |     45.7%  |            |

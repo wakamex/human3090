@@ -69,13 +69,16 @@ def sanitize_answer(raw_answer):
     return "\n".join(answer)
 
 
-def parse_completion_stream(completion_stream, prompt, task_id, end_after_n_codeblocks=None, framework="ai"):
+def parse_completion_stream(completion_stream, prompt, task_id, end_after_n_codeblocks=None, framework="ai", stream=True):
     """Parse a completion stream and return the response."""
     response = []
     finished = False
     while not finished:
         try:
-            text = next(completion_stream).choices[0].delta.content if framework == "ai" else next(completion_stream)
+            if stream:  # Handle streaming response
+                text = next(completion_stream).choices[0].delta.content if framework == "ai" else next(completion_stream)
+            else:  # Handle non-streaming response
+                text = completion_stream.choices[0].message.content if framework == "ai" else completion_stream
             # if text=='':
             #     finished = True
             if text:
@@ -99,10 +102,10 @@ def parse_completion_stream(completion_stream, prompt, task_id, end_after_n_code
     return "".join(response)
 
 
-def hf(prompt, model, temperature=0.8, task_id=None, end_after_n_codeblocks=None):
+def hf(prompt, model, temperature=0.8, task_id=None, end_after_n_codeblocks=None, stream=True):
     client = InferenceClient(model=model, token=HUGGINGFACE_KEY)
-    completion_stream = client.text_generation(prompt=prompt, stream=True, max_new_tokens=1_000, temperature=temperature)
-    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id, end_after_n_codeblocks=end_after_n_codeblocks, framework="hf")
+    completion_stream = client.text_generation(prompt=prompt, stream=stream, max_new_tokens=1_000, temperature=temperature)
+    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id, end_after_n_codeblocks=end_after_n_codeblocks, framework="hf", stream=stream)
 
 def make_kwargs(temperature=0.8, frequency_penalty=None, presence_penalty=None):
     kwargs = {"temperature": temperature}
@@ -120,7 +123,7 @@ def make_kwargs_o3(frequency_penalty=None, presence_penalty=None):
         kwargs["frequency_penalty"] = frequency_penalty
     return kwargs
 
-def together(prompt, model, system=None, task_id=None, temperature=0.8, frequency_penalty=None, presence_penalty=None):
+def together(prompt, model, system=None, task_id=None, temperature=0.8, frequency_penalty=None, presence_penalty=None, stream=True):
     client = Together(api_key=TOGETHER_KEY)
     messages = [{"role": "user", "content": prompt}]
     if system:
@@ -128,38 +131,38 @@ def together(prompt, model, system=None, task_id=None, temperature=0.8, frequenc
     kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
     # response = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
     # print(response.choices[0].message.content)
-    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
-    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
+    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=stream, max_tokens=1_000, **kwargs)
+    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id, stream=stream)
 
-def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", temperature=0.8, max_tokens=1_000, frequency_penalty=None, presence_penalty=None, task_id=None):
+def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", temperature=0.8, max_tokens=1_000, frequency_penalty=None, presence_penalty=None, task_id=None, stream=True):
     client = OpenAI(base_url=url, api_key=key)
     messages = [{"role": "user", "content": prompt}]
     if system:
         messages = [{"role": "system", "content": system}] + messages
     kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
-    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=max_tokens, **kwargs)
-    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
+    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=stream, max_tokens=max_tokens, **kwargs)
+    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id, stream=stream)
 
-def ai_o3(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", frequency_penalty=None, presence_penalty=None, task_id=None):
+def ai_o3(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", frequency_penalty=None, presence_penalty=None, task_id=None, stream=True):
     client = OpenAI(base_url=url, api_key=key)
     messages = [{"role": "user", "content": prompt}]
     if system:
         messages = [{"role": "system", "content": system}] + messages
     kwargs = make_kwargs_o3(frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
-    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, **kwargs)
-    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
+    completion_stream = client.chat.completions.create(model=model, messages=messages, stream=stream, **kwargs)
+    return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id, stream=stream)
 
-def main(model, temperature, preamble = "Please continue to complete the function.\n```python\n", max_tokens = 1_000, start_problem = 1):
+def main(model, temperature, preamble = "Please continue to complete the function.\n```python\n", max_tokens = 1_000, start_problem = 1, end_problem = None, stream = False):
     # Get model shortname (e.g. 'smollm2-1.7b-instruct-q4_k_m' from 'smollm2-1.7b-instruct-q4_k_m.gguf')
     model_shortname = os.path.splitext(os.path.basename(model))[0]
     problems = read_problems()
     keys = list(problems.keys())
-    subset = {key: problems[key] for key in keys[start_problem-1:]}
+    subset = {key: problems[key] for key in keys[start_problem-1:end_problem]}
     start_time = time.time()
     for task_id in subset:
         raw_prompt = problems[task_id]["prompt"]
         prompt = preamble + raw_prompt
-        raw_answer = ai(prompt=prompt,model=model,temperature=temperature,max_tokens=max_tokens,task_id=task_id)
+        completion = ai(prompt=prompt, url="http://localhost:8083/v1", model=model_shortname, temperature=temperature, max_tokens=max_tokens, task_id=task_id, stream=stream)
 
         # sanitize answer, and append it to the jsonl file
         with open(f"{model_shortname}_human_eval.jsonl", "a", encoding="utf-8") as f:
@@ -174,6 +177,8 @@ if __name__ == "__main__":
     parser.add_argument("--preamble", default="Please continue to complete the function.\n```python\n", help="Optional preamble text")
     parser.add_argument("--max-tokens", type=int, default=512, help="Maximum tokens per completion")
     parser.add_argument("--start-problem", type=int, default=1, help="Problem index to start from (1-based)")
+    parser.add_argument("--end-problem", type=int, default=None, help="Problem index to end at (1-based)")
+    parser.add_argument("--stream", action="store_true", help="Use streaming output for sglang server")
 
     args = parser.parse_args()
     main(
@@ -181,5 +186,7 @@ if __name__ == "__main__":
         temperature=args.temperature,
         preamble=args.preamble,
         max_tokens=args.max_tokens,
-        start_problem=args.start_problem
+        start_problem=args.start_problem,
+        end_problem=args.end_problem,
+        stream=args.stream
     )
