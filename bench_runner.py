@@ -11,10 +11,10 @@ import urllib.request
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from urllib.error import URLError
 
-from parsers import PARSERS
+import parse_results
 
 class ReadmeUpdater:
     """Updates README.md with benchmark results."""
@@ -30,21 +30,26 @@ class ReadmeUpdater:
         with open(self.readme_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
 
-        # Find the table
+        # Find the appropriate table based on benchmark type
+        benchmark = results["benchmark"]
         table_start = None
         for i, line in enumerate(lines):
-            if "|" in line and "Human Eval" in line:
-                table_start = i
-                break
+            if "|" in line:
+                if benchmark == "human_eval" and "Human Eval" in line:
+                    table_start = i
+                    break
+                elif benchmark == "lcb" and "test5.jsonl" in line:
+                    table_start = i
+                    break
 
         if table_start is None:
-            raise ValueError("Could not find results table in README.md")
+            raise ValueError(f"Could not find {benchmark} results table in README.md")
 
         # Create new row
         model_name = results["model"]
         score = results["results"]["score"]
         time_taken = results["results"]["time_taken"]
-        new_row = f"| {model_name} | {results['config']['gpu_layers']} layers | {score:.1f}% | {time_taken:.2f}s |\n"
+        new_row = f"| {model_name} |  | {score:.1f}% | {time_taken:.2f}s |\n"
 
         # Insert the row after the header
         lines.insert(table_start + 2, new_row)
@@ -131,28 +136,44 @@ class BenchmarkRunner:
 
     def _save_results(self, results: Dict[str, Any]):
         """Save results to file."""
+        class CompactJSONEncoder(json.JSONEncoder):
+            def encode(self, obj):
+                if isinstance(obj, dict):
+                    # Keep failed_tasks list on one line
+                    if 'failed_tasks' in obj:
+                        failed = obj['failed_tasks']
+                        obj = {**obj}
+                        del obj['failed_tasks']
+                        result = super().encode(obj)[:-1]  # Remove closing brace
+                        return result + ', "failed_tasks": ' + self.encode(failed) + '}'
+                    return super().encode(obj)
+                if isinstance(obj, list):
+                    return '[' + ', '.join(self.encode(item) for item in obj) + ']'
+                return super().encode(obj)
+
         with open(self.results_file, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2)
+            json.dump(results, f, indent=2, cls=CompactJSONEncoder)
 
     def _process_results(self, 
                         benchmark: str,
                         output_file: str,
-                        duration: float) -> Dict[str, Any]:
+                        duration: float,
+                        cli_args: Dict[str, Any]) -> Dict[str, Any]:
         """Process benchmark results and format for storage."""
-        parser = PARSERS.get(benchmark)
-        if not parser:
-            raise ValueError(f"No parser available for benchmark: {benchmark}")
+        score, details = parse_results.parse_results(output_file)
 
-        score, details = parser.parse_results(output_file)
+        # Reconstruct CLI command for reproducibility
+        cli_cmd = [".venv/bin/python", "bench_runner.py"]
+        for k, v in cli_args.items():
+            if v is not None:  # Only include non-None arguments
+                k = k.replace('_', '-')  # Convert snake_case to kebab-case
+                cli_cmd.extend([f"--{k}", str(v)])
 
         return {
             "timestamp": datetime.now().isoformat(),
             "benchmark": benchmark,
             "model": Path(self.model_path).stem,
-            "config": {
-                "path": self.model_path,
-                "gpu_layers": self.gpu_layers
-            },
+            "command": ' '.join(cli_cmd),  # Store exact command for reproduction
             "results": {
                 "score": score,
                 "time_taken": duration,
@@ -160,14 +181,9 @@ class BenchmarkRunner:
             }
         }
 
-    def run_benchmark(self, 
-                     benchmark: str,
-                     script_path: str,
-                     temperature: float = 0.0,
-                     preamble: Optional[str] = None,
-                     max_tokens: int = 512,
-                     update_readme: bool = True) -> Dict[str, Any]:
+    def run_benchmark(self, cli_args: Dict[str, Any]) -> Dict[str, Any]:
         """Run a benchmark and store its results."""
+        script_path = cli_args['script']
         if not os.path.exists(script_path):
             raise FileNotFoundError(f"Benchmark script not found: {script_path}")
 
@@ -177,34 +193,54 @@ class BenchmarkRunner:
             # First run the benchmark script
             cmd = [".venv/bin/python", script_path,
                    "--model", self.model_path,
-                   "--temperature", str(temperature),
-                   "--max-tokens", str(max_tokens)]
-            if preamble:
-                cmd.extend(["--preamble", preamble])
+                   "--temperature", str(cli_args['temperature']),
+                   "--max-tokens", str(cli_args['max_tokens'])]
+            if cli_args.get('preamble'):
+                cmd.extend(["--preamble", cli_args['preamble']])
+
+            # Add LCB-specific arguments
+            if cli_args['benchmark'] == "lcb":
+                if not cli_args.get('problems_file'):
+                    raise ValueError("problems_file is required for LCB benchmark")
+                cmd.extend(["--problems-file", cli_args['problems_file']])
+                if cli_args.get('start_date'):
+                    cmd.extend(["--start-date", cli_args['start_date']])
+                if cli_args.get('end_date'):
+                    cmd.extend(["--end-date", cli_args['end_date']])
+                if cli_args.get('start_problem', 1) > 1:
+                    cmd.extend(["--start-problem", str(cli_args['start_problem'])])
             subprocess.run(cmd, check=True)
 
             # Get model shortname (e.g. 'smollm2-1.7b-instruct-q4_k_m' from 'smollm2-1.7b-instruct-q4_k_m.gguf')
             model_shortname = os.path.splitext(os.path.basename(self.model_path))[0]
-            output_file = f"{model_shortname}.jsonl"
+            output_file = f"{model_shortname}_{cli_args['benchmark']}.jsonl"
 
             # Then run the evaluation
-            if benchmark == "human_eval":
+            if cli_args['benchmark'] == "human_eval":
                 subprocess.run([
                     ".venv/bin/python", "-m",
                     "human_eval.evaluate_functional_correctness",
                     output_file
                 ], check=True)
+            elif cli_args['benchmark'] == "lcb":
+                from evaluate_lcb import evaluate_functional_correctness
+                evaluate_functional_correctness(
+                    output_file,
+                    cli_args['problems_file'],
+                    k=[1],  # We only need pass@1
+                    debug=False
+                )
 
             duration = time.time() - start_time
 
         # Process and store results
-        run_results = self._process_results(benchmark, output_file, duration)
+        run_results = self._process_results(cli_args['benchmark'], output_file, duration, cli_args)
         all_results = self._load_results()
         all_results["runs"].append(run_results)
         self._save_results(all_results)
 
         # Update README if requested
-        if update_readme:
+        if cli_args['update_readme']:
             self.readme_updater.update_table(run_results)
 
         return run_results
@@ -219,19 +255,21 @@ def main():
     parser.add_argument("--preamble", help="Optional preamble text")
     parser.add_argument("--max-tokens", type=int, default=512, help="Maximum tokens per completion")
     parser.add_argument("--no-readme", action="store_true", help="Don't update README.md")
+    parser.add_argument("--start-problem", type=int, default=1, help="Problem index to start from (1-based)")
+
+    # LCB-specific arguments
+    parser.add_argument("--problems-file", help="Problems file for LCB benchmark (e.g., test5.jsonl)")
+    parser.add_argument("--start-date", help="Start date for LCB problems (YYYY-MM-DD)")
+    parser.add_argument("--end-date", help="End date for LCB problems (YYYY-MM-DD)")
 
     args = parser.parse_args()
 
     runner = BenchmarkRunner(args.model, args.gpu_layers)
     try:
-        results = runner.run_benchmark(
-            args.benchmark,
-            args.script,
-            temperature=args.temperature,
-            preamble=args.preamble,
-            max_tokens=args.max_tokens,
-            update_readme=not args.no_readme
-        )
+        # Pass args for command reconstruction and execution
+        cli_args = vars(args)
+        cli_args['update_readme'] = not args.no_readme  # Convert no_readme to update_readme
+        results = runner.run_benchmark(cli_args)
         print(json.dumps(results, indent=2))
     except Exception as e:
         print(f"Error running benchmark: {e}", file=sys.stderr)

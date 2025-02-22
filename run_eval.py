@@ -162,7 +162,7 @@ def main(model, temperature, preamble = "Please continue to complete the functio
         raw_answer = ai(prompt=prompt,model=model,temperature=temperature,max_tokens=max_tokens,task_id=task_id)
 
         # sanitize answer, and append it to the jsonl file
-        with open(f"{model_shortname}.jsonl", "a", encoding="utf-8") as f:
+        with open(f"{model_shortname}_human_eval.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(dict(task_id=task_id, completion=sanitize_answer(raw_answer))))
             f.write("\n")
     print(f"finished in {time.time() - start_time:.2f}s")

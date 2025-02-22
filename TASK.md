@@ -12,7 +12,9 @@ Create a generic benchmark runner that can manage different benchmark types (Hum
 ├── parsers/             # Benchmark-specific parsers
 │   ├── __init__.py     # Parser registry
 │   ├── base.py         # Base parser class
-│   └── human_eval.py   # HumanEval parser
+│   ├── human_eval.py   # HumanEval parser
+│   └── lcb.py          # LCB parser
+├── evaluate_lcb.py      # LCB evaluation
 └── benchmark_results.json
 ```
 
@@ -43,12 +45,27 @@ JSON structure for storing benchmark results:
 ```
 
 ## Usage
+
+### HumanEval Benchmark
 ```bash
 ./bench_runner.py \
     --model /path/to/model.gguf \
     --gpu-layers 40 \
     --benchmark human_eval \
     --script run_eval.py \
+    --temperature 0.0 \
+    --max-tokens 1000
+```
+
+### LCB Benchmark
+```bash
+./bench_runner.py \
+    --model /path/to/model.gguf \
+    --gpu-layers 40 \
+    --benchmark lcb \
+    --script run_lcb.py \
+    --problems-file test5.jsonl \
+    --start-date 2025-02-01 \
     --temperature 0.0 \
     --max-tokens 1000
 ```
@@ -62,12 +79,13 @@ JSON structure for storing benchmark results:
 ✓ 5. Added basic CLI interface
 ✓ 6. Added model name handling and README.md updates
 ✓ 7. Successfully ran and validated HumanEval benchmark
+✓ 8. Added LCB parser and support
+✓ 9. Added benchmark-specific CLI arguments
 
 ## Next Steps
 
-1. [ ] Add support for run_lcb.py
-2. [ ] Add benchmark-specific CLI arguments (context length, top_p)
-3. [ ] Add error handling for server startup
-4. [ ] Add progress reporting during long runs
-5. [ ] Consider parallel processing for faster evaluation
-6. [ ] Consider batched inference if beneficial
+1. [✓] Test LCB integration with sample problems
+2. [ ] Add error handling for server startup
+3. [ ] Add progress reporting during long runs
+4. [ ] Consider parallel processing for faster evaluation
+5. [ ] Add result comparison across different models
