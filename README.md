@@ -44,6 +44,7 @@ Unless otherwise specified:
 | Simplescaling S1    | simplescaling_s1-32B-Q5_K_S.gguf                               |      68.3%  |   1140.21s |
 | Tqwendo             | tqwendo-36b-Q4_K_L.gguf                                        |      87.8%  |   1916.67s |
 | smollm2             | smollm2-1.7b-instruct-q4_k_m                                   |      30.5%  |    203.09s |
+| tinyr1              | tinyr1-32b-preview-q4_k_m                                      |      31.1%  |   4992.37s |
 
 ## LiveCodeBench
 

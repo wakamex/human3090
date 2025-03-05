@@ -8,3 +8,4 @@ data/
 *.bak2
 *.txt
 __pycache__/
+*.gguf
