@@ -47,26 +47,41 @@ def clear_output_robust():
 
 
 def sanitize_answer(raw_answer):
-    """Sanitize the answer to remove unwanted parts of the code, like comments."""
-    code_started = True
-    answer = []
-    for line in raw_answer.split("\n"):
-        # valid start of line that we want to include
-        if line.lstrip(" ").startswith("def") or line.lstrip(" ").startswith("import"):
-            code_started = True
-            answer.append(line)
-        # marks start of code, but we don't want to include it
-        # elif line.startswith("```python"):
-        elif "```python" in line:
-            code_started = True
-        # don't include anything after the code block
-        elif line.startswith("```"):
-            break
-        elif not line.startswith(" ") and not line.startswith("\t") and line != "" and line != "\n":
-            code_started = False
-        elif code_started:
-            answer.append(line)
-    return "\n".join(answer)
+    """Sanitize the answer to extract code from LLM outputs."""
+    # Handle thinking LLMs
+    if "<think>" in raw_answer and "</think>" in raw_answer:
+        raw_answer = raw_answer.split("</think>", 1)[1].strip()
+    elif "<think>" in raw_answer:
+        return ""  # Unclosed think tag
+
+    # Try to extract code from markdown code blocks
+    if "```python" in raw_answer and "```" in raw_answer.split("```python", 1)[1]:
+        return raw_answer.split("```python", 1)[1].split("```", 1)[0].strip()
+
+    # Line-by-line extraction
+    code_lines, in_code, found_def = [], False, False
+
+    for line in raw_answer.splitlines():
+        stripped = line.strip()
+
+        # Code indicators
+        if line.lstrip().startswith(("def ", "import ", "from ", "class ")):
+            if line.lstrip().startswith("def "):
+                if found_def: continue  # Skip duplicate functions
+                found_def = True
+            in_code = True
+            code_lines.append(line)
+        # Code blocks
+        elif "```python" in line: in_code = True
+        elif line.startswith("```"): in_code = False
+        # Indented lines
+        elif in_code and (line.startswith(" ") or line.startswith("\t")):
+            code_lines.append(line)
+        # End code mode on non-indented text
+        elif stripped and not (line.startswith(" ") or line.startswith("\t")):
+            in_code = False
+
+    return "\n".join(code_lines)
 
 
 def parse_completion_stream(completion_stream, prompt, task_id, end_after_n_codeblocks=None, framework="ai"):
