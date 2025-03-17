@@ -3,7 +3,9 @@
 data/
 *.jsonl
 *.json
+!benchmark_results.json
 *.bak
 *.bak2
 *.txt
 __pycache__/
+*.gguf

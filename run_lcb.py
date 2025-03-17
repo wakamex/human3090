@@ -53,29 +53,31 @@ def create_prompt(problem: Dict) -> str:
     description += '    """\n'
     return description
 
-def main():
-    parser = argparse.ArgumentParser(description='Run LCB problems')
-    parser.add_argument('problems_file', type=str, help='Problems file (e.g., test5.jsonl)')
-    parser.add_argument('--start-date', type=str, help='Start date in YYYY-MM-DD format')
-    parser.add_argument('--end-date', type=str, help='End date in YYYY-MM-DD format')
-    parser.add_argument('--start-problem', type=int, default=1, help='Starting problem')
-    args = parser.parse_args()
+def main(model: str,
+         temperature: float = 0.0,
+         max_tokens: int = 1_000,
+         start_problem: int = 1,
+         end_problem: int = None,
+         problems_file: str = "test5.jsonl",
+         start_date: str = None,
+         end_date: str = None):
+    """Run LCB benchmark with specified parameters."""
 
     # Read all problems
-    problems = read_lcb_problems(args.problems_file)
+    problems = read_lcb_problems(problems_file)
     filtered_problems = {}
 
     # Filter by date range if dates are provided
-    if args.start_date or args.end_date:
-        start_date = datetime.strptime(args.start_date, '%Y-%m-%d').date() if args.start_date else datetime.min.date()
-        end_date = datetime.strptime(args.end_date, '%Y-%m-%d').date() if args.end_date else datetime.max.date()
+    if start_date or end_date:
+        start = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else datetime.min.date()
+        end = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else datetime.max.date()
 
         for task_id, problem in problems.items():
             problem_date = datetime.strptime(problem['contest_date'].split('T')[0], '%Y-%m-%d').date()
-            if start_date <= problem_date <= end_date:
+            if start <= problem_date <= end:
                 filtered_problems[task_id] = problem
 
-        date_range = f" between {start_date} and {end_date}"
+        date_range = f" between {start} and {end}"
     else:
         filtered_problems = problems
         date_range = ""
@@ -84,12 +86,12 @@ def main():
         print(f"No problems found{date_range}")
         return
 
-    # Sort and apply start_problem
+    # Sort and apply start_problem and end_problem
     keys = sorted(filtered_problems.keys())
-    subset = {key: filtered_problems[key] for key in keys[args.start_problem-1:]}
+    subset = {key: filtered_problems[key] for key in keys[start_problem-1:end_problem]}
 
     print(f"Found {len(filtered_problems)} problems{date_range}")
-    print(f"Processing {len(subset)} problems starting from index {args.start_problem}")
+    print(f"Processing {len(subset)} problems starting from index {start_problem} and ending at index {end_problem}")
 
     start_time = time.time()
 
@@ -98,11 +100,7 @@ def main():
         prompt = create_prompt(problem)
         print(f"{task_id=}")
 
-        # ./build/bin/llama-server -m /seagate/models/DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf --port 8084 -ngl 80
-        url = "http://127.0.0.1:8084/v1"
-        model = "test_results"
-        temperature = 0.6
-        max_tokens = 20_000
+        url = "http://127.0.0.1:8083/v1"
         raw_answer = ai(prompt=prompt, url=url, model=model, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
         sanitized_answer = sanitize_answer(raw_answer)
 
@@ -111,11 +109,33 @@ def main():
             'completion': sanitized_answer,
             'difficulty': problem['difficulty']
         }
-        with open(f"{model}.jsonl", "a", encoding="utf-8") as f:
+        # Get model shortname (e.g. 'smollm2-1.7b-instruct-q4_k_m' from 'smollm2-1.7b-instruct-q4_k_m.gguf')
+        model_shortname = os.path.splitext(os.path.basename(model))[0]
+        with open(f"{model_shortname}_lcb.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(result))
             f.write("\n")
 
     print(f"finished in {time.time() - start_time:.2f}s")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run LCB benchmark with specified parameters")
+    parser.add_argument("--model", required=True, help="Model file path")
+    parser.add_argument("--temperature", type=float, default=0.0, help="Temperature for sampling")
+    parser.add_argument("--max-tokens", type=int, default=1_000, help="Maximum tokens per completion")
+    parser.add_argument("--start-problem", type=int, default=1, help="Problem index to start from (1-based)")
+    parser.add_argument("--end-problem", type=int, default=None, help="Problem index to end at (1-based)")
+    parser.add_argument("--problems-file", default="test5.jsonl", help="Problems file (e.g., test5.jsonl)")
+    parser.add_argument("--start-date", help="Start date for LCB problems (YYYY-MM-DD)")
+    parser.add_argument("--end-date", help="End date for LCB problems (YYYY-MM-DD)")
+
+    args = parser.parse_args()
+    main(
+        model=args.model,
+        temperature=args.temperature,
+        max_tokens=args.max_tokens,
+        start_problem=args.start_problem,
+        end_problem=args.end_problem,
+        problems_file=args.problems_file,
+        start_date=args.start_date,
+        end_date=args.end_date
+    )

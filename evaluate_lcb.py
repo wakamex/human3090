@@ -209,12 +209,13 @@ def check_correctness(completion: str, test_case: Dict[str, Any], timeout: float
         if not result:
             result.append("timed out")
 
+        passed = result[0] == "passed"
         return dict(
             task_id=test_case.get("task_id", "unknown"),
             difficulty=test_case.get("difficulty", "unknown"),
-            passed=result[0] == "passed",
-            result=result[0],
+            passed=passed,
             completion_id=completion_id,
+            completion=completion,  # Store completion for output
         )
 
 def evaluate_functional_correctness(
@@ -316,17 +317,17 @@ def evaluate_functional_correctness(
     pass_at_k = {f"pass@{k}": estimate_pass_at_k(total, correct, k).mean()
                  for k in ks if (total >= k).all()}
 
-    # Save results in same format as original samples
+    # Save results in same format as HumanEval
     def combine_results():
         seen_task_ids = set()
         for task_id in all_task_ids:
             if task_id in results and task_id not in seen_task_ids:
                 seen_task_ids.add(task_id)
                 for completion_id, result in sorted(results[task_id]):
+                    # Match HumanEval format while preserving multiple completions
                     yield {
                         "task_id": task_id,
-                        "completion_id": completion_id,
-                        "result": result["result"],
+                        "completion": result["completion"],
                         "passed": result["passed"],
                         "difficulty": result["difficulty"]
                     }
