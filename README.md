@@ -45,13 +45,15 @@ Unless otherwise specified:
 | Tqwendo             | tqwendo-36b-Q4_K_L.gguf                                        |      87.8%  |   1916.67s |
 | smollm2             | smollm2-1.7b-instruct-q4_k_m                                   |      30.5%  |    203.09s |
 | tinyr1              | tinyr1-32b-preview-q4_k_m                                      |      31.1%  |   4992.37s |
-| QwQ                 | QwQ-32B-Q4_K_M                                                 |      41.5%  |   5146.36s |
+| QwQ                 | QwQ-32B-Q4_K_M, `max_tokens=10000`                             |      78.0%  |  19609.10s |
+| QwQ                 | QwQ-32B-Q4_K_M, `temperature=0.6`, `max-tokens=10000`          |      78.0%  |  18689.78s |
 
 ## LiveCodeBench
 
 | Model               | Configuration                                                  | test5.jsonl | Time taken |
 |---------------------|----------------------------------------------------------------|------------:|-----------:|
 | smollm2             | smollm2-1.7b-instruct-q4_k_m                                   |       4.2%  |    259.23s |
+| QwQ                 | QwQ-32B-Q4_K_M                                                 |       0.0%  |   5196.35s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 

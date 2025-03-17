@@ -15,6 +15,7 @@ from typing import Any, Dict
 from urllib.error import URLError
 
 import parse_results
+from bench_constants import DEFAULT_VALUES
 
 class ReadmeUpdater:
     """Updates README.md with benchmark results."""
@@ -52,12 +53,44 @@ class ReadmeUpdater:
                 table_end = i
                 break
 
-        # Create new row
+        # Create new row with non-default parameters
         model_name = results["model"]
         score = results["results"]["score"]
         time_taken = results["results"]["time_taken"]
         model_short_name = model_name.split('-')[0]
-        new_row = f"| {model_short_name:<19} | {model_name:<62} | {score:>9.1f}%  | {time_taken:>9.2f}s |\n"
+
+        # Extract command line arguments for non-default parameters
+        command = results["command"]
+        command_parts = command.split()
+
+        # Extract non-default parameters
+        non_default_params = []
+        i = 0
+        while i < len(command_parts):
+            if command_parts[i].startswith("--") and i + 1 < len(command_parts):
+                param = command_parts[i]
+                value = command_parts[i + 1]
+
+                # Check if this is a non-default value and a parameter we want to include
+                if param in DEFAULT_VALUES and value != DEFAULT_VALUES[param]:
+                    param_name = param[2:]  # Remove -- prefix
+                    non_default_params.append(f"`{param_name}={value}`")
+
+                # Always include gpu-layers as it's an important parameter
+                elif param == "--gpu-layers":
+                    non_default_params.append(f"`gpu-layers={value}`")
+
+                i += 2
+            else:
+                i += 1
+
+        # Create configuration string
+        configuration = model_name
+        if non_default_params:
+            configuration += ", " + ", ".join(non_default_params)
+
+        # Format the new row
+        new_row = f"| {model_short_name:<19} | {configuration:<62} | {score:>9.1f}%  | {time_taken:>9.2f}s |\n"
 
         # Insert the row at the end of the table
         lines.insert(table_end, new_row)
@@ -214,6 +247,10 @@ class BenchmarkRunner:
                 cmd.extend(["--start-problem", str(cli_args['start_problem'])])
             if cli_args.get('end_problem'):
                 cmd.extend(["--end-problem", str(cli_args['end_problem'])])
+            if cli_args.get('top_p'):
+                cmd.extend(["--top-p", str(cli_args['top_p'])])
+            if cli_args.get('min_p'):
+                cmd.extend(["--min-p", str(cli_args['min_p'])])
 
             # Add LCB-specific arguments
             if cli_args['benchmark'] == "lcb":
@@ -266,11 +303,13 @@ def main():
     parser.add_argument("--gpu-layers", type=int, required=True, help="Number of GPU layers")
     parser.add_argument("--benchmark", required=True, help="Benchmark type (e.g., human_eval, lcb)")
     parser.add_argument("--script", required=True, help="Path to benchmark script")
-    parser.add_argument("--temperature", type=float, default=0.0, help="Temperature for sampling")
+    parser.add_argument("--temperature", type=float, default=float(DEFAULT_VALUES["--temperature"]),help="Temperature for sampling")
+    parser.add_argument("--top-p", type=float, default=float(DEFAULT_VALUES["--top-p"]),help="Top-p for sampling")
+    parser.add_argument("--min-p", type=float, default=float(DEFAULT_VALUES["--min-p"]),help="Minimum p for sampling")
     parser.add_argument("--preamble", help="Optional preamble text")
-    parser.add_argument("--max-tokens", type=int, default=512, help="Maximum tokens per completion")
+    parser.add_argument("--max-tokens", type=int, default=int(DEFAULT_VALUES["--max-tokens"]),help="Maximum tokens per completion")
     parser.add_argument("--no-readme", action="store_true", help="Don't update README.md")
-    parser.add_argument("--start-problem", type=int, default=1, help="Problem index to start from (1-based)")
+    parser.add_argument("--start-problem", type=int, default=int(DEFAULT_VALUES["--start-problem"]),help="Problem index to start from (1-based)")
     parser.add_argument("--end-problem", type=int, help="Problem index to end at (1-based)")
 
     # LCB-specific arguments
@@ -284,8 +323,8 @@ def main():
     try:
         # Pass args for command reconstruction and execution
         runner.run_benchmark(vars(args))
-    except Exception as e:
-        print(f"Error running benchmark: {e}", file=sys.stderr)
+    except Exception as exc:
+        print(f"Error running benchmark: {exc}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
