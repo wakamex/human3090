@@ -1,5 +1,7 @@
 ## HumanEval on a local 3090 results
 
+<img src="human_eval_scatter.png">
+
 Unless otherwise specified:
 - maximum number of layers offloaded to GPU
 - local models run with llama.cpp server and .gguf formats
