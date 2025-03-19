@@ -132,7 +132,7 @@ class BenchmarkRunner:
         try:
             # Wait for server to be ready
             start_time = time.time()
-            while time.time() - start_time < 60:  # 60 second timeout
+            while time.time() - start_time < 600:  # 600 second timeout
                 try:
                     # Check health endpoint
                     with urllib.request.urlopen(f'http://localhost:{port}/health') as response:
