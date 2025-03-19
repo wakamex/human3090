@@ -75,11 +75,6 @@ class ReadmeUpdater:
                 if param in DEFAULT_VALUES and value != DEFAULT_VALUES[param]:
                     param_name = param[2:]  # Remove -- prefix
                     non_default_params.append(f"`{param_name}={value}`")
-
-                # Always include gpu-layers as it's an important parameter
-                elif param == "--gpu-layers":
-                    non_default_params.append(f"`gpu-layers={value}`")
-
                 i += 2
             else:
                 i += 1
@@ -300,7 +295,7 @@ class BenchmarkRunner:
 def main():
     parser = argparse.ArgumentParser(description="Run LLM benchmarks")
     parser.add_argument("--model", required=True, help="Model file path")
-    parser.add_argument("--gpu-layers", type=int, required=True, help="Number of GPU layers")
+    parser.add_argument("--gpu-layers", type=int, default=int(DEFAULT_VALUES["--gpu-layers"]), help="Number of GPU layers")
     parser.add_argument("--benchmark", required=True, help="Benchmark type (e.g., human_eval, lcb)")
     parser.add_argument("--script", required=True, help="Path to benchmark script")
     parser.add_argument("--temperature", type=float, default=float(DEFAULT_VALUES["--temperature"]),help="Temperature for sampling")
