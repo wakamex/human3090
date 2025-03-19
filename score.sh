@@ -16,10 +16,10 @@ if [ ! -f "$filename" ]; then
 fi
 
 # Run the human_eval script with the provided filename
-python -m human_eval.evaluate_functional_correctness "$filename"
+.venv/bin/python -c "from human_eval.evaluate_functional_correctness import main; main()" "$filename"
 
 # Assuming the results are saved with '_results.jsonl' appended to the original filename
 result_filename="${filename}_results.jsonl"
 
 # Run the inspect_result script with the results filename
-python inspect_result.py "$result_filename"
+.venv/bin/python inspect_result.py "$result_filename"
