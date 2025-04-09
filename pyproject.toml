@@ -6,6 +6,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "huggingface-hub>=0.30.2",
     "human-eval>=1.0.3",
+    "matplotlib>=3.10.1",
     "openai>=1.72.0",
     "together>=1.5.5",
 ]
