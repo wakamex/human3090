@@ -1,20 +1,22 @@
 #!/usr/bin/env python
-import json
-import sys
+import argparse
 import ast
-from collections import defaultdict, Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Any, Union
 import contextlib
 import io
+import itertools
+import json
 import os
 import signal
+import sys
 import tempfile
+from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from multiprocessing import Manager, Process
-import tqdm
+from typing import Any, Dict, List, Union
+
 import numpy as np
-import itertools
-import argparse
+import tqdm
+
 
 @contextlib.contextmanager
 def time_limit(seconds: float):
@@ -45,7 +47,8 @@ class TimeoutException(Exception):
     pass
 
 class WriteOnlyStringIO(io.StringIO):
-    """StringIO that throws an exception when it's read from"""
+    """StringIO that throws an exception when it's read from."""
+
     def read(self, *args, **kwargs):
         raise IOError
     def readline(self, *args, **kwargs):
@@ -193,8 +196,8 @@ def unsafe_execute(completion: str, test_case: Dict[str, Any], timeout: float, r
             result.append(f"failed: {e}")
 
 def check_correctness(completion: str, test_case: Dict[str, Any], timeout: float, completion_id: int = None) -> Dict:
-    """
-    Evaluates the functional correctness of a completion by running the test case.
+    """Evaluate the functional correctness of a completion by running the test case.
+
     Uses multiprocessing for safety.
     """
     with Manager() as manager:
@@ -226,8 +229,8 @@ def evaluate_functional_correctness(
     timeout: float = 3.0,
     debug: bool = False,
 ):
-    """
-    Evaluates the functional correctness of generated samples.
+    """Evaluate the functional correctness of generated samples.
+
     Returns pass@k metrics and writes detailed results to f"{solutions}_results.jsonl"
     """
     # Load all test cases first
@@ -346,14 +349,10 @@ def estimate_pass_at_k(
     num_correct: Union[List[int], np.ndarray],
     k: int
 ) -> np.ndarray:
-    """
-    Estimates pass@k of each problem and returns them in an array.
-    """
+    """Estimate pass@k of each problem and returns them in an array."""
 
     def estimator(n: int, c: int, k: int) -> float:
-        """
-        Calculates 1 - comb(n - c, k) / comb(n, k).
-        """
+        """Calculate 1 - comb(n - c, k) / comb(n, k)."""
         if n - c < k:
             return 1.0
         return 1.0 - np.prod(1.0 - k / np.arange(n - c + 1, n + 1))

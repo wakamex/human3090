@@ -14,8 +14,9 @@ from pathlib import Path
 from typing import Any, Dict
 from urllib.error import URLError
 
-import parse_results
-from bench_constants import DEFAULT_VALUES
+from . import parse_results
+from .bench_constants import DEFAULT_VALUES
+
 
 class ReadmeUpdater:
     """Updates README.md with benchmark results."""
@@ -224,15 +225,25 @@ class BenchmarkRunner:
 
     def run_benchmark(self, cli_args: Dict[str, Any]) -> Dict[str, Any]:
         """Run a benchmark and store its results."""
-        script_path = cli_args['script']
-        if not os.path.exists(script_path):
-            raise FileNotFoundError(f"Benchmark script not found: {script_path}")
+        # Get the directory where this script (bench_runner.py) is located
+        package_dir = Path(__file__).parent.resolve()
+        script_filename = cli_args['script']
+        # Construct the full path to the target script within the package
+        script_path = package_dir / script_filename
 
-        # Run the benchmark
+        if not script_path.exists():
+            # Look also in CWD for backward compatibility or other use cases? Optional.
+            script_path_cwd = Path(script_filename).resolve()
+            if not script_path_cwd.exists():
+                raise FileNotFoundError(f"Benchmark script not found in package ({package_dir}) or CWD: {script_filename}")
+            else:
+                script_path = script_path_cwd # Found in CWD
+
+        # Run the benchmark using the resolved script path
         with self.llama_server() as port:
             start_time = time.time()
             # First run the benchmark script
-            cmd = [".venv/bin/python", script_path,
+            cmd = [sys.executable, str(script_path), # Use sys.executable and the full path
                    "--model", self.model_path,
                    "--temperature", str(cli_args['temperature']),
                    "--max-tokens", str(cli_args['max_tokens'])]
