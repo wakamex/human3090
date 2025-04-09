@@ -243,7 +243,8 @@ class BenchmarkRunner:
         with self.llama_server() as port:
             start_time = time.time()
             # First run the benchmark script
-            cmd = [sys.executable, str(script_path), # Use sys.executable and the full path
+            module_name = f"human3090.{script_path.stem}"
+            cmd = [sys.executable, "-m", module_name, # Use sys.executable and the full path
                    "--model", self.model_path,
                    "--temperature", str(cli_args['temperature']),
                    "--max-tokens", str(cli_args['max_tokens'])]
