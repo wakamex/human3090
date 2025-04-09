@@ -11,7 +11,7 @@ from openai import OpenAI
 from pydantic_core import ValidationError
 from together import Together
 
-from bench_constants import DEFAULT_VALUES
+from .bench_constants import DEFAULT_VALUES
 
 # pylint: disable=redefined-outer-name, line-too-long, missing-module-docstring, invalid-name, import-outside-toplevel
 # ruff: noqa: E501

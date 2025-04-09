@@ -8,7 +8,9 @@ import time
 
 from human_eval.data import read_problems
 from openai import OpenAI
-from run_eval import sanitize_answer
+
+from .run_eval import sanitize_answer
+
 
 def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", 
        temperature=0.8, max_tokens=1_000, frequency_penalty=None, presence_penalty=None):
@@ -38,7 +40,7 @@ def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key=
 
 # Custom wrapper for sanitize_answer to add debug printing
 def debug_sanitize_answer(raw_answer):
-    """Wrapper around sanitize_answer that adds debug printing."""
+    """Wrap sanitize_answer to add debug printing."""
     print("=== RAW ANSWER ===")
     print(raw_answer)
     print("=== END RAW ANSWER ===")

@@ -14,6 +14,7 @@ dependencies = [
 bench_runner = "human3090.bench_runner:main"
 inspect_result = "human3090.inspect_result:main"
 show_human = "human3090.show_human:main"
+test_single_problem = "human3090.test_single_problem:main"
 
 [tool.ruff]
 # Default is: pycodestyle (E) and Pyflakes (F)
