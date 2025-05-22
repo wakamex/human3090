@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import os
 import time
-from typing import Dict
-import argparse
 from datetime import datetime
+from typing import Dict
 
 from dotenv import load_dotenv
 
-from run_eval import ai, sanitize_answer
+from human3090.run_eval import ai, sanitize_answer
 
 # Load environment variables
 load_dotenv(".env")
