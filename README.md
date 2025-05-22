@@ -54,6 +54,7 @@ Unless otherwise specified:
 | EXAONE                | EXAONE-Deep-32B-Q4_K_M, `temperature=0.6`, `top-p=0.95`, `max-tokens=10000`      |      79.9%  |  25417.01s |
 | Mistral-Small-3.1-24B | mistralai_Mistral-Small-3.1-24B-Instruct-2503-Q6_K_L                             |      89.0%  |   2390.45s |
 | DeepCoder-14B-Preview | agentica-org_DeepCoder-14B-Preview-Q6_K_L, `temperature=0.6`, `max-tokens=10000` |      75.0%  |  16987.95s |
+| Devstral              | Devstral-Small-2505-Q4_K_M, `start-problem=163`                                  |      90.2%  |  42544.20s |
 
 ## LiveCodeBench
 

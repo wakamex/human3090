@@ -12,5 +12,5 @@ echo "Scoring $filename"
 
 results_filename=${filename}_results.jsonl
 
-inspect_result $results_filename
+.venv/bin/python ./human3090/inspect_result.py $results_filename
 

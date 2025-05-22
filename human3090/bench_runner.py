@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Any, Dict
 from urllib.error import URLError
 
-from . import parse_results
-from .bench_constants import DEFAULT_VALUES
+from human3090.bench_constants import DEFAULT_VALUES
+from human3090.parse_results import parse_results
 
 
 class ReadmeUpdater:
@@ -202,7 +202,7 @@ class BenchmarkRunner:
                         duration: float,
                         cli_args: Dict[str, Any]) -> Dict[str, Any]:
         """Process benchmark results and format for storage."""
-        score, details = parse_results.parse_results(output_file)
+        score, details = parse_results(output_file)
 
         # Reconstruct CLI command for reproducibility
         cli_cmd = [".venv/bin/python", "bench_runner.py"]

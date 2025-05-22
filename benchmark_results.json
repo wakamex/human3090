@@ -262,6 +262,25 @@
         },
         "failed_tasks": ["HumanEval/1","HumanEval/102","HumanEval/103","HumanEval/109","HumanEval/116","HumanEval/118","HumanEval/119","HumanEval/126","HumanEval/127","HumanEval/129","HumanEval/130","HumanEval/132","HumanEval/134","HumanEval/140","HumanEval/145","HumanEval/147","HumanEval/163","HumanEval/20","HumanEval/24","HumanEval/25","HumanEval/26","HumanEval/32","HumanEval/38","HumanEval/40","HumanEval/41","HumanEval/43","HumanEval/47","HumanEval/59","HumanEval/65","HumanEval/69","HumanEval/76","HumanEval/77","HumanEval/81","HumanEval/84","HumanEval/86","HumanEval/87","HumanEval/92","HumanEval/93","HumanEval/94","HumanEval/96","HumanEval/99"]
       }
+    },
+    {
+      "timestamp": "2025-05-21T22:59:29.890354",
+      "benchmark": "human_eval",
+      "model": "Devstral-Small-2505-Q4_K_M",
+      "command": ".venv/bin/python bench_runner.py --model /code/llama.cpp/Devstral-Small-2505-Q4_K_M.gguf --gpu-layers 80 --benchmark human_eval --script run_eval.py --temperature 0.0 --top-p 0.9 --min-p 0.1 --max-tokens 1000 --no-readme False --start-problem 163",
+      "results": {
+        "score": 90.2439024390244,
+        "time_taken": 405.89579153060913,
+        "total_passed": 148,
+        "total_problems": 164,
+        "difficulty_scores": {
+          "unknown": {
+            "passed": 148,
+            "total": 164
+          }
+        },
+        "failed_tasks": ["HumanEval/108","HumanEval/115","HumanEval/127","HumanEval/129","HumanEval/130","HumanEval/132","HumanEval/134","HumanEval/140","HumanEval/145","HumanEval/163","HumanEval/32","HumanEval/54","HumanEval/65","HumanEval/76","HumanEval/83","HumanEval/91"]
+      }
     }
   ]
 }
