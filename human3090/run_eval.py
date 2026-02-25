@@ -121,12 +121,15 @@ def hf(prompt, model, temperature=0.8, task_id=None, end_after_n_codeblocks=None
     completion_stream = client.text_generation(prompt=prompt, stream=True, max_new_tokens=1_000, temperature=temperature)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id, end_after_n_codeblocks=end_after_n_codeblocks, framework="hf")
 
-def make_kwargs(temperature=0.8, frequency_penalty=None, presence_penalty=None):
+def make_kwargs(temperature=0.8, frequency_penalty=None, presence_penalty=None, top_p=None, min_p=None):
     kwargs = {"temperature": temperature}
     if presence_penalty is not None:
         kwargs["presence_penalty"] = presence_penalty
     if frequency_penalty is not None:
         kwargs["frequency_penalty"] = frequency_penalty
+    if top_p is not None:
+        kwargs["top_p"] = top_p
+    # min_p is intentionally not added to kwargs as it's not supported by the OpenAI client's create method
     return kwargs
 
 def make_kwargs_o3(frequency_penalty=None, presence_penalty=None):
@@ -153,7 +156,7 @@ def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key=
     messages = [{"role": "user", "content": prompt}]
     if system:
         messages = [{"role": "system", "content": system}] + messages
-    kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty)
+    kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty, top_p=top_p, min_p=min_p)
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=max_tokens, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 

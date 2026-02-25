@@ -55,6 +55,8 @@ Unless otherwise specified:
 | Mistral-Small-3.1-24B | mistralai_Mistral-Small-3.1-24B-Instruct-2503-Q6_K_L                             |      89.0%  |   2390.45s |
 | DeepCoder-14B-Preview | agentica-org_DeepCoder-14B-Preview-Q6_K_L, `temperature=0.6`, `max-tokens=10000` |      75.0%  |  16987.95s |
 | Devstral              | Devstral-Small-2505-Q4_K_M, `start-problem=163`                                  |      90.2%  |  42544.20s |
+| Qwen3.5-27B           | Qwen3.5-27B-Q4_K_M, `max-tokens=10000`                                           |      98.2%  |   3953.13s |
+| Qwen3.5-35B-A3B       | Qwen3.5-35B-A3B-Q4_K_M (MoE, 3B active), `max-tokens=10000`                      |      96.3%  |   1289.29s |
 
 ## LiveCodeBench
 
@@ -62,6 +64,9 @@ Unless otherwise specified:
 |---------------------|----------------------------------------------------------------|------------:|-----------:|
 | smollm2             | smollm2-1.7b-instruct-q4_k_m                                   |       4.2%  |    259.23s |
 | QwQ                 | QwQ-32B-Q4_K_M                                                 |       0.0%  |   5196.35s |
+| Devstral            | Devstral-Small-2505-Q4_K_M, `start-problem=34`                 |       8.6%  |  57268.14s |
+| Qwen3.5-27B         | Qwen3.5-27B-Q4_K_M, `max-tokens=10000`                         |       8.8%  |            |
+| Qwen3.5-35B-A3B     | Qwen3.5-35B-A3B-Q4_K_M (MoE, 3B active), `max-tokens=10000`   |       6.6%  |   5127.97s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 

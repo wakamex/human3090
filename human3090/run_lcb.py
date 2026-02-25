@@ -56,6 +56,8 @@ def create_prompt(problem: Dict) -> str:
 def main(model: str,
          temperature: float = 0.0,
          max_tokens: int = 1_000,
+         top_p: float = 0.9,
+         min_p: float = 0.1,
          start_problem: int = 1,
          end_problem: int = None,
          problems_file: str = "test5.jsonl",
@@ -101,7 +103,11 @@ def main(model: str,
         print(f"{task_id=}")
 
         url = "http://127.0.0.1:8083/v1"
-        raw_answer = ai(prompt=prompt, url=url, model=model, temperature=temperature, max_tokens=max_tokens, task_id=task_id)
+        try:
+            raw_answer = ai(prompt=prompt, url=url, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, min_p=min_p, task_id=task_id)
+        except Exception as e:
+            print(f"Error on {task_id}: {e}")
+            raw_answer = ""
         sanitized_answer = sanitize_answer(raw_answer)
 
         result = {
@@ -127,8 +133,11 @@ if __name__ == "__main__":
     parser.add_argument("--problems-file", default="test5.jsonl", help="Problems file (e.g., test5.jsonl)")
     parser.add_argument("--start-date", help="Start date for LCB problems (YYYY-MM-DD)")
     parser.add_argument("--end-date", help="End date for LCB problems (YYYY-MM-DD)")
+    parser.add_argument("--top-p", type=float, default=0.9, help="Top-p for sampling")
+    parser.add_argument("--min-p", type=float, default=0.1, help="Min-p for sampling")
 
     args = parser.parse_args()
+
     main(
         model=args.model,
         temperature=args.temperature,
@@ -137,5 +146,7 @@ if __name__ == "__main__":
         end_problem=args.end_problem,
         problems_file=args.problems_file,
         start_date=args.start_date,
-        end_date=args.end_date
+        end_date=args.end_date,
+        top_p=args.top_p,
+        min_p=args.min_p
     )
