@@ -8,4 +8,6 @@
 *.bak2
 *.txt
 __pycache__/
+*.egg-info/
+*.csv
 *.gguf

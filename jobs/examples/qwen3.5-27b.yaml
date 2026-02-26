@@ -1,5 +1,5 @@
 # Qwen3.5-27B — thinking model, needs 32k context
-model: Qwen3.5-27B-Q4_K_M.gguf
+model: /mnt/raid5/models/Qwen3.5-27B-Q4_K_M.gguf
 benchmarks: [human_eval, lcb]
 max_tokens: 32000
 context_size: 32768
