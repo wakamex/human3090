@@ -5,7 +5,7 @@ import time
 
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
-from human_eval.data import read_problems
+from human3090.human_eval.data import read_problems
 from openai import OpenAI
 from pydantic_core import ValidationError
 from together import Together

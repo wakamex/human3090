@@ -77,7 +77,7 @@ def find_efficient_frontier(times, accuracies):
     return is_efficient
 
 
-def create_scatter_plot(data):
+def create_scatter_plot(data, show=True):
     """Create a scatter plot of HumanEval accuracy vs. time taken."""
     # Extract data
     times = [item['time_taken'] for item in data]
@@ -140,11 +140,20 @@ def create_scatter_plot(data):
             'r-', alpha=0.5
         )
 
-    # Save and show plot
+    # Save and optionally show plot
     plt.tight_layout()
     plt.savefig('human_eval_scatter.png', dpi=300)
     print("Plot saved as 'human_eval_scatter.png'")
-    plt.show()
+    if show:
+        plt.show()
+    plt.close()
+
+
+def update_plot(readme_path: str = "README.md"):
+    """Regenerate the scatter plot from README data (non-interactive)."""
+    data = parse_readme_data(readme_path)
+    if data:
+        create_scatter_plot(data, show=False)
 
 
 def main():

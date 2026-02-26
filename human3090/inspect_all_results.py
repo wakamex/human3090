@@ -3,7 +3,7 @@ import json
 import os
 
 import pandas as pd
-from human_eval.data import read_problems
+from human3090.human_eval.data import read_problems
 
 problems = read_problems()
 

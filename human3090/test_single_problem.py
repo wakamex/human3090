@@ -6,7 +6,7 @@ import json
 import sys
 import time
 
-from human_eval.data import read_problems
+from human3090.human_eval.data import read_problems
 from openai import OpenAI
 
 from .run_eval import sanitize_answer

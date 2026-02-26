@@ -1,6 +1,6 @@
 import sys
 
-from human_eval.data import read_problems
+from human3090.human_eval.data import read_problems
 
 
 def main():

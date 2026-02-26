@@ -6,7 +6,7 @@ import time
 
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
-from human_eval.data import read_problems
+from human3090.human_eval.data import read_problems
 from openai import OpenAI
 from pydantic_core import ValidationError
 from together import Together
@@ -54,49 +54,108 @@ def sanitize_answer(raw_answer):
     if "<think>" in raw_answer and "</think>" in raw_answer:
         raw_answer = raw_answer.split("</think>", 1)[1].strip()
     elif "<think>" in raw_answer:
-        return ""  # Unclosed think tag
+        # Unclosed think tag - only salvage if there's a proper code block
+        # (loose def/class in thinking text are just reasoning fragments, not runnable code)
+        after_think = raw_answer.rsplit("<think>", 1)[1]
+        if "```python" in after_think:
+            raw_answer = after_think
+        else:
+            return ""
 
     # Try to extract code from markdown code blocks
     if "```python" in raw_answer and "```" in raw_answer.split("```python", 1)[1]:
         return raw_answer.split("```python", 1)[1].split("```", 1)[0].strip()
 
+    # Also try bare ``` code blocks
+    if "```\n" in raw_answer and raw_answer.count("```") >= 2:
+        blocks = raw_answer.split("```")
+        for i in range(1, len(blocks), 2):
+            block = blocks[i].strip()
+            if block and ("def " in block or "class " in block):
+                # Strip optional language identifier on first line
+                lines = block.split('\n')
+                if lines[0].strip() in ('python', 'py', ''):
+                    block = '\n'.join(lines[1:])
+                return block.strip()
+
     # Line-by-line extraction
-    code_lines, in_code, found_def = [], False, False
+    code_lines, in_code = [], False
 
     for line in raw_answer.splitlines():
         stripped = line.strip()
 
         # Code indicators
         if line.lstrip().startswith(("def ", "import ", "from ", "class ")):
-            if line.lstrip().startswith("def "):
-                if found_def: continue  # Skip duplicate functions
-                found_def = True
             in_code = True
             code_lines.append(line)
         # Code blocks
         elif "```python" in line: in_code = True
         elif line.startswith("```"): in_code = False
-        # Indented lines
-        elif in_code and (line.startswith(" ") or line.startswith("\t")):
+        # Indented lines or blank lines within code
+        elif in_code and (line.startswith(" ") or line.startswith("\t") or stripped == ""):
             code_lines.append(line)
         # End code mode on non-indented text
         elif stripped and not (line.startswith(" ") or line.startswith("\t")):
             in_code = False
 
-    return "\n".join(code_lines)
+    return "\n".join(code_lines).strip()
+
+
+def _detect_loop(text, window=30, min_unique=10):
+    """Detect loops: if fewer than `min_unique` unique lines in the last `window` lines."""
+    lines = text.split('\n')
+    if len(lines) < window:
+        return False
+    recent = [l.strip() for l in lines[-window:] if l.strip()]
+    if len(recent) < window // 2:
+        return False
+    return len(set(recent)) < min_unique
 
 
 def parse_completion_stream(completion_stream, prompt, task_id, end_after_n_codeblocks=None, framework="ai"):
     """Parse a completion stream and return the response."""
     response = []
+    in_reasoning = False
     finished = False
+    loop_check_counter = 0
     while not finished:
         try:
-            text = next(completion_stream).choices[0].delta.content if framework == "ai" else next(completion_stream)
-            # if text=='':
-            #     finished = True
+            if framework == "ai":
+                chunk = next(completion_stream)
+                delta = chunk.choices[0].delta
+                # Handle reasoning_content (thinking models like Qwen3.5)
+                reasoning = getattr(delta, 'reasoning_content', None)
+                if reasoning:
+                    if not in_reasoning:
+                        response.append("<think>")
+                        in_reasoning = True
+                    response.append(reasoning)
+                    # Periodically check for loops in reasoning (every ~500 tokens)
+                    loop_check_counter += 1
+                    if loop_check_counter >= 500:
+                        loop_check_counter = 0
+                        if _detect_loop("".join(response)):
+                            print(f"\n[loop detected, stopping early]", flush=True)
+                            response.append("</think>")
+                            in_reasoning = False
+                            finished = True
+                            continue
+                text = delta.content
+                if text and in_reasoning:
+                    response.append("</think>")
+                    in_reasoning = False
+            else:
+                text = next(completion_stream)
             if text:
                 response.append(text)
+                # Check for loops in content too
+                loop_check_counter += 1
+                if loop_check_counter >= 500:
+                    loop_check_counter = 0
+                    if _detect_loop("".join(response)):
+                        print(f"\n[loop detected in content, stopping early]", flush=True)
+                        finished = True
+                        continue
                 clear_output_robust()
                 if task_id:
                     print(f"{task_id}\n")

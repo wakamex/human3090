@@ -1,18 +1,23 @@
 [project]
 name = "human3090"
 version = "0.0.1"
+requires-python = ">=3.12"
 authors = [{ name = "Mihai Cosma", email = "mcosma@gmail.com" }]
 dependencies = [
     "dotenv>=0.9.9",
     "huggingface-hub>=0.30.2",
-    "human-eval>=1.0.3",
+    "numpy>=1.26",
+    "tqdm>=4.66",
     "matplotlib>=3.10.1",
     "openai>=1.72.0",
+    "pyyaml>=6.0",
     "together>=1.5.5",
 ]
 
 [project.scripts]
 bench_runner = "human3090.bench_runner:main"
+start_human_daemon = "human3090.daemon:start"
+stop_human_daemon = "human3090.daemon:stop"
 inspect_result = "human3090.inspect_result:main"
 show_human = "human3090.show_human:main"
 test_single_problem = "human3090.test_single_problem:main"
@@ -56,11 +61,11 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 # Assume Python 3.12
 target-version = "py312"
 
-[tool.setuptools]
-packages = ["human3090"]
+[tool.setuptools.packages.find]
+where = ["."]
 
-[tool.uv.sources]
-human-eval = { git = "ssh://git@github.com/wakamex/human-eval.git" }
+[tool.setuptools.package-data]
+"human3090.human_eval" = ["data/*.gz"]
 
 [build-system]
 requires = ["setuptools"]

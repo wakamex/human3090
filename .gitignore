@@ -1,6 +1,6 @@
 .venv
 .env
-data/
+/data/
 *.jsonl
 *.json
 !benchmark_results.json
