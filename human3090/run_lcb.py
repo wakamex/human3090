@@ -24,34 +24,57 @@ def read_lcb_problems(filename: str) -> Dict:
             problems[task_id] = problem
     return problems
 
+def create_stdin_prompt(problem: Dict) -> str:
+    """Create a prompt for stdin/stdout problems (AtCoder)."""
+    tc = json.loads(problem['public_test_cases'])
+
+    prompt = f"# {problem['question_title']}\n\n"
+    prompt += problem['question_content'] + "\n\n"
+
+    # Show examples
+    prompt += "## Examples\n\n"
+    for i, t in enumerate(tc[:3]):
+        prompt += f"Input:\n{t['input']}\nOutput:\n{t['output']}\n"
+
+    prompt += "Write a Python function that reads from stdin and prints to stdout.\n"
+    prompt += "The function signature must be exactly:\n\n"
+    prompt += "```python\n"
+    prompt += "def solve(input_text: str) -> str:\n"
+    prompt += "```\n\n"
+    prompt += "Where `input_text` is the full stdin as a single string, and the return value is the full stdout as a string.\n"
+    prompt += "Return ONLY the function definition in a ```python code block.\n"
+    return prompt
+
+
+def create_functional_prompt(problem: Dict) -> str:
+    """Create a prompt for functional problems (LeetCode)."""
+    tc = json.loads(problem['public_test_cases'])
+
+    prompt = f"# {problem['question_title']}\n\n"
+    prompt += problem['question_content'] + "\n\n"
+
+    # Show examples
+    prompt += "## Examples\n\n"
+    for i, t in enumerate(tc[:3]):
+        prompt += f"Input:\n{t['input']}\nOutput:\n{t['output']}\n"
+
+    prompt += "Complete the following Python code:\n\n"
+    prompt += "```python\n"
+    prompt += problem['starter_code'] + "\n"
+    prompt += "```\n\n"
+    prompt += "Return the complete class definition in a ```python code block.\n"
+    return prompt
+
+
 def create_prompt(problem: Dict) -> str:
-    """Create a prompt for the model from an LCB problem."""
-    # Format problem description and test cases
-    description = f"# {problem['question_title']}\n\n"
-    content = problem['question_content']
+    """Create a platform-aware prompt for the model from an LCB problem."""
+    tc = json.loads(problem['public_test_cases'])
+    testtype = tc[0].get('testtype', 'stdin')
 
-    # Extract parameter names from first example input
-    param_names = []
-    for line in content.split('\n'):
-        if line.startswith('Input:'):
-            # Extract variable names from "Input: var1 = val1, var2 = val2"
-            params = line.split(':', 1)[1].strip()
-            if not param_names:
-                param_names = [p.split('=')[0].strip() for p in params.split(', ')]
-            description += line.replace('Input: ', 'solve(') + ')\n'
-        else:
-            description += f"{line.replace('Output: ', '')}\n"
-
-    # Function template
-    description += "\nComplete this function:\n\n"
-    description += f"def solve({', '.join(param_names)}) -> str:\n"
-    description += '    """Solve the problem.\n'
-    description += "    Args:\n"
-    description += "        input_text: problem input as a single string with newlines\n"
-    description += "    Returns:\n"
-    description += "        solution output as a string with newlines\n"
-    description += '    """\n'
-    return description
+    if testtype == 'stdin':
+        return create_stdin_prompt(problem)
+    else:
+        return create_functional_prompt(problem)
 
 def main(model: str,
          temperature: float = 0.0,
@@ -62,7 +85,8 @@ def main(model: str,
          end_problem: int = None,
          problems_file: str = "test5.jsonl",
          start_date: str = None,
-         end_date: str = None):
+         end_date: str = None,
+         save_raw: bool = False):
     """Run LCB benchmark with specified parameters."""
 
     # Read all problems
@@ -121,6 +145,12 @@ def main(model: str,
             f.write(json.dumps(result))
             f.write("\n")
 
+        if save_raw:
+            raw_result = {'task_id': task_id, 'raw_response': raw_answer}
+            with open(f"{model_shortname}_lcb_raw.jsonl", "a", encoding="utf-8") as f:
+                f.write(json.dumps(raw_result))
+                f.write("\n")
+
     print(f"finished in {time.time() - start_time:.2f}s")
 
 if __name__ == "__main__":
@@ -135,6 +165,7 @@ if __name__ == "__main__":
     parser.add_argument("--end-date", help="End date for LCB problems (YYYY-MM-DD)")
     parser.add_argument("--top-p", type=float, default=0.9, help="Top-p for sampling")
     parser.add_argument("--min-p", type=float, default=0.1, help="Min-p for sampling")
+    parser.add_argument("--save-raw", action="store_true", help="Save raw model responses for debugging")
 
     args = parser.parse_args()
 
@@ -148,5 +179,6 @@ if __name__ == "__main__":
         start_date=args.start_date,
         end_date=args.end_date,
         top_p=args.top_p,
-        min_p=args.min_p
+        min_p=args.min_p,
+        save_raw=args.save_raw
     )

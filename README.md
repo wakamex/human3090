@@ -66,7 +66,7 @@ Unless otherwise specified:
 | QwQ                 | QwQ-32B-Q4_K_M                                                 |       0.0%  |   5196.35s |
 | Devstral            | Devstral-Small-2505-Q4_K_M, `start-problem=34`                 |       8.6%  |  57268.14s |
 | Qwen3.5-27B         | Qwen3.5-27B-Q4_K_M, `max-tokens=10000`                         |       8.8%  |            |
-| Qwen3.5-35B-A3B     | Qwen3.5-35B-A3B-Q4_K_M (MoE, 3B active), `max-tokens=10000`   |       6.6%  |   5127.97s |
+| Qwen3.5-35B-A3B     | Qwen3.5-35B-A3B-Q4_K_M (MoE, 3B active), `max-tokens=32000`   |      65.5%  |   5139.25s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 

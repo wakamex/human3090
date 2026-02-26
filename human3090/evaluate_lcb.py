@@ -103,9 +103,9 @@ def extract_code_from_text(text: str) -> str:
         return ""
 
     lines = text.split('\n')
-    # Find first line that starts with def, import, or from
+    # Find first line that starts with def, import, from, or class
     for i, line in enumerate(lines):
-        if line.startswith(('def ', 'import ', 'from ')):
+        if line.startswith(('def ', 'import ', 'from ', 'class ')):
             code = '\n'.join(lines[i:])
             # Add missing imports
             imports = []
@@ -128,6 +128,8 @@ def unsafe_execute(completion: str, test_case: Dict[str, Any], timeout: float, r
         result.append("failed: No valid code found")
         return
 
+    testtype = test_case.get('testtype', 'stdin')
+
     with create_tempdir():
         try:
             # Create namespace and exec the completion
@@ -135,7 +137,6 @@ def unsafe_execute(completion: str, test_case: Dict[str, Any], timeout: float, r
             with swallow_io():
                 with time_limit(timeout):
                     try:
-                        # First execute the completion to define the function
                         exec(completion, namespace)
                     except IndentationError as e:
                         result.append(f"failed: Code indentation error - {str(e)}")
@@ -144,47 +145,69 @@ def unsafe_execute(completion: str, test_case: Dict[str, Any], timeout: float, r
                         result.append(f"failed: Code syntax error - {str(e)}")
                         return
 
-                    # Get the function name from the completion
-                    func_name = extract_function_name(completion)
-                    if not func_name:
-                        result.append("failed: No function found in solution")
-                        return
-                    if func_name not in namespace:
-                        result.append(f"failed: Function {func_name} not found")
-                        return
+                    if testtype == 'stdin':
+                        # AtCoder: call solve(input_text) -> str
+                        func_name = extract_function_name(completion)
+                        if not func_name:
+                            result.append("failed: No function found in solution")
+                            return
+                        if func_name not in namespace:
+                            result.append(f"failed: Function {func_name} not found")
+                            return
+                        func = namespace[func_name]
 
-                    func = namespace[func_name]
+                        actual = str(func(test_case['input']))
+                        expected = test_case['output'].strip()
 
-                    # Parse inputs
-                    input_lines = test_case['input'].strip().split('\n')
-                    args = []
-                    for line in input_lines:
-                        try:
-                            # Try parsing as JSON string first
-                            arg = json.loads(line)
-                            if isinstance(arg, str):
-                                # If it's a string, try parsing again in case it's a JSON string
-                                try:
-                                    arg = json.loads(arg)
-                                except:
-                                    pass
-                            # If it's a string, remove quotes
-                            if isinstance(arg, str) and arg.startswith('"') and arg.endswith('"'):
-                                arg = arg[1:-1]
-                            args.append(arg)
-                        except:
-                            # If that fails, use the raw value
-                            args.append(line)
-
-                    # Run function and compare output
-                    actual = str(func(*args))
-                    expected = test_case['output'].strip()
-
-                    # Convert to lowercase for comparison
-                    if actual.lower() == expected.lower():
-                        result.append("passed")
+                        if actual.strip() == expected:
+                            result.append("passed")
+                        else:
+                            result.append(f"failed: Expected {expected}, got {actual.strip()}")
                     else:
-                        result.append(f"failed: Expected {expected}, got {actual}")
+                        # LeetCode: handle class Solution or standalone function
+                        if 'Solution' in namespace:
+                            sol = namespace['Solution']()
+                            method_name = test_case.get('method_name')
+                            if method_name and hasattr(sol, method_name):
+                                func = getattr(sol, method_name)
+                            else:
+                                # Fallback: find user-defined method
+                                methods = [m for m in dir(sol)
+                                           if not m.startswith('_') and callable(getattr(sol, m))]
+                                if not methods:
+                                    result.append("failed: No method found in Solution class")
+                                    return
+                                func = getattr(sol, methods[0])
+                        else:
+                            func_name = extract_function_name(completion)
+                            if not func_name or func_name not in namespace:
+                                result.append("failed: No function found in solution")
+                                return
+                            func = namespace[func_name]
+
+                        # Parse JSON args from input lines
+                        input_lines = test_case['input'].strip().split('\n')
+                        args = []
+                        for line in input_lines:
+                            try:
+                                arg = json.loads(line)
+                                args.append(arg)
+                            except json.JSONDecodeError:
+                                args.append(line)
+
+                        actual = func(*args)
+                        expected_str = test_case['output'].strip()
+                        try:
+                            expected = json.loads(expected_str)
+                        except json.JSONDecodeError:
+                            expected = expected_str
+
+                        if actual == expected:
+                            result.append("passed")
+                        elif str(actual) == str(expected):
+                            result.append("passed")
+                        else:
+                            result.append(f"failed: Expected {expected}, got {actual}")
 
         except TimeoutException:
             result.append("timed out")
@@ -240,6 +263,18 @@ def evaluate_functional_correctness(
         for line in f:
             prob = json.loads(line)
             test_cases = json.loads(prob["public_test_cases"])
+            # Extract method name from starter_code for LeetCode problems
+            method_name = None
+            starter = prob.get("starter_code", "")
+            if starter:
+                for sc_line in starter.split('\n'):
+                    sc_stripped = sc_line.strip()
+                    if sc_stripped.startswith("def ") and sc_stripped != "def __init__":
+                        method_name = sc_stripped.split("(")[0].replace("def ", "")
+                        break
+            for tc in test_cases:
+                if method_name:
+                    tc["method_name"] = method_name
             test_cases_by_id[prob["question_id"]] = {
                 "test_cases": test_cases,
                 "difficulty": prob.get("difficulty", "unknown")
