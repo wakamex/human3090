@@ -60,13 +60,13 @@ Unless otherwise specified:
 
 ## LiveCodeBench
 
-| Model               | Configuration                                                  | test5.jsonl | Time taken |
-|---------------------|----------------------------------------------------------------|------------:|-----------:|
-| smollm2             | smollm2-1.7b-instruct-q4_k_m                                   |       4.2%  |    259.23s |
-| QwQ                 | QwQ-32B-Q4_K_M                                                 |       0.0%  |   5196.35s |
-| Devstral            | Devstral-Small-2505-Q4_K_M, `start-problem=34`                 |       8.6%  |  57268.14s |
-| Qwen3.5-27B         | Qwen3.5-27B-Q4_K_M, `max-tokens=10000`                         |       8.8%  |            |
-| Qwen3.5-35B-A3B     | Qwen3.5-35B-A3B-Q4_K_M (MoE, 3B active), `max-tokens=32000`   |      65.5%  |   5139.25s |
+| Model               | Configuration                                                  | Version |       Score | Time taken |
+|---------------------|----------------------------------------------------------------|---------|------------:|-----------:|
+| smollm2             | smollm2-1.7b-instruct-q4_k_m                                   | LCBv5   |       4.2%  |    259.23s |
+| QwQ                 | QwQ-32B-Q4_K_M                                                 | LCBv5   |       0.0%  |   5196.35s |
+| Devstral            | Devstral-Small-2505-Q4_K_M, `start-problem=34`                 | LCBv5   |       8.6%  |  57268.14s |
+| Qwen3.5-27B         | Qwen3.5-27B-Q4_K_M, `max-tokens=10000`                         | LCBv5   |       8.8%  |            |
+| Qwen3.5-35B-A3B     | Qwen3.5-35B-A3B-Q4_K_M (MoE, 3B active), `max-tokens=32000`   | LCBv5   |      65.5%  |   5139.25s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 

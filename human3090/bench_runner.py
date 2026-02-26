@@ -57,7 +57,7 @@ class ReadmeUpdater:
                 if benchmark == "human_eval" and "Human Eval" in line:
                     table_start = i
                     break
-                elif benchmark == "lcb" and "test5.jsonl" in line:
+                elif benchmark == "lcb" and "Version" in line and "Score" in line:
                     table_start = i
                     break
 
@@ -95,7 +95,12 @@ class ReadmeUpdater:
         if non_default_params:
             configuration += ", " + ", ".join(non_default_params)
 
-        new_row = f"| {model_short_name:<19} | {configuration:<62} | {score:>9.1f}%  | {time_taken:>9.2f}s |\n"
+        if benchmark == "lcb":
+            problems_file = results.get("problems_file") or "test5.jsonl"
+            version = problems_file.replace("test", "LCBv").replace(".jsonl", "")
+            new_row = f"| {model_short_name:<19} | {configuration:<62} | {version:<7} | {score:>9.1f}%  | {time_taken:>9.2f}s |\n"
+        else:
+            new_row = f"| {model_short_name:<19} | {configuration:<62} | {score:>9.1f}%  | {time_taken:>9.2f}s |\n"
         lines.insert(table_end, new_row)
 
         with open(self.readme_path, 'w', encoding='utf-8') as f:
@@ -230,6 +235,7 @@ def _store_results(job: Job, duration: float) -> Dict[str, Any]:
         "benchmark": job.benchmark,
         "model": job.model_shortname,
         "command": _reconstruct_command(job),
+        "problems_file": job.problems_file if job.benchmark == "lcb" else None,
         "results": {
             "score": score,
             "time_taken": duration,
