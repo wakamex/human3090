@@ -69,6 +69,7 @@ Unless otherwise specified:
 | Qwen3.5-35B-A3B     | Qwen3.5-35B-A3B-Q4_K_M (MoE, 3B active), `max-tokens=32000`   | LCBv5   |      65.5%  |   5139.25s |
 | agentica            | agentica-org_DeepCoder-14B-Preview-Q6_K_L, `max-tokens=10000`, `context-size=32768` | LCBv5   |       8.8%  |  27151.90s |
 | agentica            | agentica-org_DeepCoder-14B-Preview-Q6_K_L, `max-tokens=10000`, `context-size=32768` | LCBv6   |      16.4%  |  28325.10s |
+| DeepSeek            | DeepSeek-R1-Distill-Qwen-14B-Q6_K_L, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      30.8%  |  32852.81s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
