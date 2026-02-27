@@ -120,9 +120,11 @@ def main(model: str,
     print(f"Processing {len(subset)} problems starting from index {start_problem} and ending at index {end_problem}")
 
     start_time = time.time()
+    model_shortname = os.path.splitext(os.path.basename(model))[0]
 
     # Process problems
     for task_id, problem in subset.items():
+        problem_start = time.time()
         prompt = create_prompt(problem)
         print(f"{task_id=}")
 
@@ -133,25 +135,44 @@ def main(model: str,
             print(f"Error on {task_id}: {e}")
             raw_answer = ""
         sanitized_answer = sanitize_answer(raw_answer)
+        problem_duration = time.time() - problem_start
 
         result = {
             'task_id': task_id,
             'completion': sanitized_answer,
-            'difficulty': problem['difficulty']
+            'difficulty': problem['difficulty'],
+            'time_taken': round(problem_duration, 2)
         }
-        # Get model shortname (e.g. 'smollm2-1.7b-instruct-q4_k_m' from 'smollm2-1.7b-instruct-q4_k_m.gguf')
-        model_shortname = os.path.splitext(os.path.basename(model))[0]
         with open(f"{model_shortname}_lcb.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(result))
             f.write("\n")
 
         if save_raw:
-            raw_result = {'task_id': task_id, 'raw_response': raw_answer}
+            raw_result = {'task_id': task_id, 'raw_response': raw_answer, 'time_taken': round(problem_duration, 2)}
             with open(f"{model_shortname}_lcb_raw.jsonl", "a", encoding="utf-8") as f:
                 f.write(json.dumps(raw_result))
                 f.write("\n")
 
-    print(f"finished in {time.time() - start_time:.2f}s")
+    total_time = time.time() - start_time
+
+    # Append metadata summary
+    metadata = {
+        '_metadata': True,
+        'total_time': round(total_time, 2),
+        'total_problems': len(subset),
+        'model': model,
+        'temperature': temperature,
+        'max_tokens': max_tokens,
+        'top_p': top_p,
+        'min_p': min_p,
+        'problems_file': problems_file,
+        'timestamp': datetime.now().isoformat()
+    }
+    with open(f"{model_shortname}_lcb.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(metadata))
+        f.write("\n")
+
+    print(f"finished in {total_time:.2f}s")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run LCB benchmark with specified parameters")

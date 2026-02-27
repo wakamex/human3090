@@ -288,10 +288,17 @@ def evaluate_functional_correctness(
         completion_id = Counter()
         n_samples = 0
         results = defaultdict(list)
+        run_metadata = None
 
         with open(solutions, "r", encoding="utf-8") as f:
             for line in f:
                 data = json.loads(line)
+
+                # Skip metadata entries (added for timing/config tracking)
+                if data.get('_metadata'):
+                    run_metadata = data
+                    continue
+
                 task_id = data["task_id"]
                 all_task_ids.append(task_id)
                 completion = data["completion"]
@@ -377,7 +384,11 @@ def evaluate_functional_correctness(
         for sample in tqdm.tqdm(combine_results(), total=n_samples):
             f.write(json.dumps(sample) + "\n")
 
-    return pass_at_k
+    # Return results with optional metadata (timing, config)
+    results_dict = {"pass_at_k": pass_at_k}
+    if run_metadata:
+        results_dict["metadata"] = run_metadata
+    return results_dict
 
 def estimate_pass_at_k(
     num_samples: Union[int, List[int], np.ndarray],

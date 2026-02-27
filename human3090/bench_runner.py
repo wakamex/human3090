@@ -20,7 +20,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from human3090.bench_constants import DEFAULT_VALUES
 from human3090.job import Job, job_from_cli, load_queue_dir, move_job_file, next_queued_file
@@ -211,19 +211,22 @@ def _run_benchmark(job: Job):
     subprocess.run(cmd, check=True)
 
 
-def _run_evaluation(job: Job):
-    """Run the evaluation for completed benchmark output."""
+def _run_evaluation(job: Job) -> Optional[Dict[str, Any]]:
+    """Run the evaluation for completed benchmark output. Returns metadata if available."""
     if job.benchmark == "human_eval":
         from human3090.human_eval.evaluation import evaluate_functional_correctness as eval_he
         eval_he(job.output_file, k=[1])
+        return None
     elif job.benchmark == "lcb":
         from human3090.evaluate_lcb import evaluate_functional_correctness
-        evaluate_functional_correctness(
+        results = evaluate_functional_correctness(
             job.output_file,
             job.problems_file,
             k=[1],
             debug=False,
         )
+        return results.get("metadata") if isinstance(results, dict) else None
+    return None
 
 
 def _store_results(job: Job, duration: float) -> Dict[str, Any]:
@@ -330,8 +333,13 @@ def run_single_job(job: Job, server: ServerManager, readme_updater: ReadmeUpdate
 
     start_time = time.time()
     _run_benchmark(job)
-    _run_evaluation(job)
-    duration = time.time() - start_time
+    metadata = _run_evaluation(job)
+
+    # Use timing from metadata if available (more accurate), otherwise measure total time
+    if metadata and "total_time" in metadata:
+        duration = metadata["total_time"]
+    else:
+        duration = time.time() - start_time
 
     run_result = _store_results(job, duration)
     _post_job(run_result, readme_updater, do_readme, do_plot, do_commit)
