@@ -273,11 +273,19 @@ def _update_plot(run_result: Dict[str, Any]):
 
 
 def _git_commit(run_result: Dict[str, Any]):
-    """Commit tracked result files to git."""
+    """Commit tracked result files to git and push."""
     model = run_result["model"]
     benchmark = run_result["benchmark"]
     score = run_result["results"]["score"]
-    msg = f"add {model} {benchmark} benchmark results ({score:.1f}%)"
+
+    # Add LCB version to commit message
+    if benchmark == "lcb" and run_result.get("problems_file"):
+        version = run_result["problems_file"].replace("test", "LCBv").replace(".jsonl", "")
+        benchmark_id = f"{benchmark} {version}"
+    else:
+        benchmark_id = benchmark
+
+    msg = f"add {model} {benchmark_id} results ({score:.1f}%)"
 
     try:
         # Stage only the tracked result files that exist
@@ -294,8 +302,12 @@ def _git_commit(run_result: Dict[str, Any]):
 
         subprocess.run(["git", "commit", "-m", msg], check=True, capture_output=True)
         print(f"  -> committed: {msg}")
+
+        # Push to remote
+        subprocess.run(["git", "push"], check=True, capture_output=True)
+        print(f"  -> pushed to remote")
     except Exception as exc:
-        print(f"  Warning: Failed to commit: {exc}")
+        print(f"  Warning: Failed to commit/push: {exc}")
 
 
 def _post_job(run_result: Dict[str, Any], readme_updater: ReadmeUpdater,
