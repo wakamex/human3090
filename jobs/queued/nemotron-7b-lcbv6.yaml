@@ -1,0 +1,8 @@
+# OpenCodeReasoning-Nemotron-1.1-7B — NVIDIA coding reasoning model
+model: /mnt/raid5/models/OpenCodeReasoning-Nemotron-1.1-7B.i1-Q4_K_M.gguf
+benchmarks: [lcb]
+temperature: 0.6
+max_tokens: 10000
+context_size: 32768
+lcb:
+  problems_file: test6.jsonl

@@ -1,0 +1,5 @@
+# DeepCoder-14B — coding-focused thinking model
+model: /seagate/models/agentica-org_DeepCoder-14B-Preview-Q6_K_L.gguf
+benchmarks: [lcb]
+max_tokens: 10000
+context_size: 32768

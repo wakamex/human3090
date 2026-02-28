@@ -1,0 +1,9 @@
+# Qwen3.5-35B-A3B — LCBv6
+model: /mnt/raid5/models/Qwen3.5-35B-A3B-Q4_K_M.gguf
+benchmarks: [lcb]
+temperature: 0.6
+max_tokens: 10000
+context_size: 32768
+save_raw: true
+lcb:
+  problems_file: test6.jsonl

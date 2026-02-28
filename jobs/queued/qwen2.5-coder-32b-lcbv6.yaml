@@ -1,0 +1,6 @@
+# Qwen2.5-Coder-32B — coding-specific, non-thinking
+model: /seagate/models/Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf
+benchmarks: [lcb]
+temperature: 0.0
+lcb:
+  problems_file: test6.jsonl

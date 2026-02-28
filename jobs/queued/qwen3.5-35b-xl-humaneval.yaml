@@ -1,0 +1,10 @@
+# Qwen3.5-35B-A3B UD-Q4_K_XL — SOTA Q4 quant, HumanEval
+model: /mnt/raid5/models/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf
+benchmarks: [human_eval]
+temperature: 0.6
+max_tokens: 10000
+context_size: 32768
+gpu_layers: 80
+top_p: 0.9
+min_p: 0.1
+save_raw: true

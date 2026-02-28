@@ -1,0 +1,6 @@
+# QwQ-32B — reasoning model, re-run with fixed pipeline
+model: /seagate/models/QwQ-32B-Q4_K_M.gguf
+benchmarks: [lcb]
+temperature: 0.6
+max_tokens: 10000
+context_size: 32768

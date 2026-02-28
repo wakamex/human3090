@@ -1,0 +1,7 @@
+# Qwen3.5-27B — re-run LCBv5 with fixed pipeline
+model: /mnt/raid5/models/Qwen3.5-27B-Q4_K_M.gguf
+benchmarks: [lcb]
+temperature: 0.6
+max_tokens: 10000
+context_size: 32768
+save_raw: true
