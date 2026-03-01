@@ -4,5 +4,8 @@ benchmarks: [lcb]
 temperature: 0.6
 max_tokens: 10000
 context_size: 32768
-lcb:
-  problems_file: test6.jsonl
+gpu_layers: 80
+top_p: 0.9
+min_p: 0.1
+problems_file: test6.jsonl
+save_raw: true
