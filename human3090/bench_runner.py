@@ -275,7 +275,7 @@ def _update_plot(run_result: Dict[str, Any]):
         print(f"  Warning: Failed to update plot: {exc}")
 
 
-def _git_commit(run_result: Dict[str, Any]):
+def _git_commit(run_result: Dict[str, Any], job_file_moved: bool = False):
     """Commit tracked result files to git and push."""
     model = run_result["model"]
     benchmark = run_result["benchmark"]
@@ -291,8 +291,10 @@ def _git_commit(run_result: Dict[str, Any]):
     msg = f"add {model} {benchmark_id} results ({score:.1f}%)"
 
     try:
-        # Stage only the tracked result files that exist
+        # Stage tracked result files and job file if moved
         files_to_add = [f for f in TRACKED_FILES if os.path.exists(f)]
+        if job_file_moved:
+            files_to_add.append("jobs/")
         if not files_to_add:
             return
         subprocess.run(["git", "add"] + files_to_add, check=True, capture_output=True)
@@ -314,20 +316,21 @@ def _git_commit(run_result: Dict[str, Any]):
 
 
 def _post_job(run_result: Dict[str, Any], readme_updater: ReadmeUpdater,
-              do_readme: bool, do_plot: bool, do_commit: bool):
+              do_readme: bool, do_plot: bool, do_commit: bool, job_file_moved: bool = False):
     """Run post-job steps: update README, regenerate plot, git commit."""
     if do_readme:
         _update_readme(readme_updater, run_result)
     if do_plot:
         _update_plot(run_result)
     if do_commit:
-        _git_commit(run_result)
+        _git_commit(run_result, job_file_moved=job_file_moved)
 
 
 # --- Job execution ---
 
 def run_single_job(job: Job, server: ServerManager, readme_updater: ReadmeUpdater,
-                   do_readme: bool = True, do_plot: bool = True, do_commit: bool = True) -> Dict[str, Any]:
+                   do_readme: bool = True, do_plot: bool = True, do_commit: bool = True,
+                   skip_post_job: bool = False) -> Dict[str, Any]:
     """Run a single benchmark job end-to-end."""
     server.ensure_server(job)
 
@@ -342,26 +345,14 @@ def run_single_job(job: Job, server: ServerManager, readme_updater: ReadmeUpdate
         duration = time.time() - start_time
 
     run_result = _store_results(job, duration)
-    _post_job(run_result, readme_updater, do_readme, do_plot, do_commit)
+
+    if not skip_post_job:
+        _post_job(run_result, readme_updater, do_readme, do_plot, do_commit)
 
     return run_result
 
 
 # --- Queue processing ---
-
-def _commit_job_move(yaml_path: Path, destination: str):
-    """Commit job file move to git."""
-    try:
-        subprocess.run(["git", "add", "jobs/"], check=True, capture_output=True)
-        dest_name = "done" if "done" in destination else "failed"
-        msg = f"move {yaml_path.stem} to {dest_name}/"
-        subprocess.run(["git", "commit", "-m", msg], check=True, capture_output=True)
-        subprocess.run(["git", "push"], check=True, capture_output=True)
-        print(f"  -> committed and pushed")
-    except subprocess.CalledProcessError:
-        # Ignore errors (e.g., nothing to commit, push conflicts)
-        pass
-
 
 def recover_orphaned_runs(readme_updater: ReadmeUpdater, do_readme: bool = True,
                           do_plot: bool = True, do_commit: bool = True):
@@ -533,7 +524,8 @@ def run_queue(jobs_dir: str, server: ServerManager, readme_updater: ReadmeUpdate
 
                 try:
                     result = run_single_job(job, server, readme_updater,
-                                            do_readme=do_readme, do_plot=do_plot, do_commit=do_commit)
+                                            do_readme=do_readme, do_plot=do_plot,
+                                            do_commit=do_commit, skip_post_job=True)
                     score = result["results"]["score"]
                     duration = result["results"]["time_taken"]
                     print(f"  DONE: {score:.1f}% in {duration:.0f}s")
@@ -543,14 +535,15 @@ def run_queue(jobs_dir: str, server: ServerManager, readme_updater: ReadmeUpdate
                     failed.append((job.job_id(), str(exc)))
                     file_ok = False
 
+            # Move job file first, then commit everything together
             if file_ok:
                 move_job_file(yaml_path, done_dir)
                 print(f"  -> moved to done/")
-                _commit_job_move(yaml_path, done_dir)
+                # Now do post-job processing including git commit with job move
+                _post_job(result, readme_updater, do_readme, do_plot, do_commit, job_file_moved=True)
             else:
                 move_job_file(yaml_path, failed_dir)
                 print(f"  -> moved to failed/")
-                _commit_job_move(yaml_path, failed_dir)
 
             # In watch mode, shut down server when queue is drained
             if watch and next_queued_file(jobs_dir) is None:
