@@ -349,6 +349,20 @@ def run_single_job(job: Job, server: ServerManager, readme_updater: ReadmeUpdate
 
 # --- Queue processing ---
 
+def _commit_job_move(yaml_path: Path, destination: str):
+    """Commit job file move to git."""
+    try:
+        subprocess.run(["git", "add", "jobs/"], check=True, capture_output=True)
+        dest_name = "done" if "done" in destination else "failed"
+        msg = f"move {yaml_path.stem} to {dest_name}/"
+        subprocess.run(["git", "commit", "-m", msg], check=True, capture_output=True)
+        subprocess.run(["git", "push"], check=True, capture_output=True)
+        print(f"  -> committed and pushed")
+    except subprocess.CalledProcessError:
+        # Ignore errors (e.g., nothing to commit, push conflicts)
+        pass
+
+
 def recover_orphaned_runs(readme_updater: ReadmeUpdater, do_readme: bool = True,
                           do_plot: bool = True, do_commit: bool = True):
     """Find and evaluate completed benchmark runs that weren't evaluated (orphaned by killed processes)."""
@@ -532,9 +546,11 @@ def run_queue(jobs_dir: str, server: ServerManager, readme_updater: ReadmeUpdate
             if file_ok:
                 move_job_file(yaml_path, done_dir)
                 print(f"  -> moved to done/")
+                _commit_job_move(yaml_path, done_dir)
             else:
                 move_job_file(yaml_path, failed_dir)
                 print(f"  -> moved to failed/")
+                _commit_job_move(yaml_path, failed_dir)
 
             # In watch mode, shut down server when queue is drained
             if watch and next_queued_file(jobs_dir) is None:
