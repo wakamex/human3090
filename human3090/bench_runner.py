@@ -349,6 +349,130 @@ def run_single_job(job: Job, server: ServerManager, readme_updater: ReadmeUpdate
 
 # --- Queue processing ---
 
+def recover_orphaned_runs(readme_updater: ReadmeUpdater, do_readme: bool = True,
+                          do_plot: bool = True, do_commit: bool = True):
+    """Find and evaluate completed benchmark runs that weren't evaluated (orphaned by killed processes)."""
+    import glob
+
+    # Find all result files
+    result_files = glob.glob("*_lcb.jsonl") + glob.glob("*_human_eval.jsonl")
+    orphaned = []
+
+    for result_file in result_files:
+        # Skip raw files and already-evaluated results
+        if "_raw.jsonl" in result_file or "_results.jsonl" in result_file:
+            continue
+
+        # Check if evaluation results exist
+        results_file = f"{result_file}_results.jsonl"
+        if not os.path.exists(results_file) or os.path.getsize(results_file) == 0:
+            orphaned.append(result_file)
+
+    if not orphaned:
+        return
+
+    print(f"\n{'='*60}")
+    print(f"Found {len(orphaned)} orphaned run(s) - evaluating...")
+    print(f"{'='*60}\n")
+
+    for result_file in orphaned:
+        try:
+            print(f"Evaluating: {result_file}")
+
+            # Determine benchmark type and problems file
+            if "_lcb.jsonl" in result_file:
+                benchmark = "lcb"
+                # Try to detect version from metadata in the file
+                problems_file = "test5.jsonl"  # default
+                has_metadata = False
+                try:
+                    with open(result_file, 'r') as f:
+                        for line in f:
+                            data = json.loads(line)
+                            if data.get('_metadata'):
+                                has_metadata = True
+                                if 'problems_file' in data:
+                                    problems_file = data['problems_file']
+                                break
+                except:
+                    pass
+
+                # Skip incomplete runs (no metadata footer)
+                if not has_metadata:
+                    print(f"  ⚠ Skipping incomplete run (no metadata)")
+                    continue
+
+                from human3090.evaluate_lcb import evaluate_functional_correctness
+                eval_results = evaluate_functional_correctness(
+                    result_file,
+                    problems_file,
+                    k=[1],
+                    debug=False,
+                )
+                metadata = eval_results.get("metadata") if isinstance(eval_results, dict) else None
+            else:
+                benchmark = "human_eval"
+                from human3090.human_eval.evaluation import evaluate_functional_correctness as eval_he
+                eval_he(result_file, k=[1])
+                metadata = None
+                problems_file = None
+
+            # Parse and store results
+            score, details = parse_results(result_file)
+
+            # Use timing from metadata if available
+            if metadata and "total_time" in metadata:
+                duration = metadata["total_time"]
+            else:
+                duration = 0  # Unknown
+
+            # Extract model name from filename
+            model_name = result_file.replace(f"_{benchmark}.jsonl", "").replace("_", "/", 1)
+
+            # Build minimal command reconstruction
+            command = f"bench_runner --model {model_name} --benchmark {benchmark}"
+            if problems_file and benchmark == "lcb":
+                command += f" --problems-file {problems_file}"
+
+            # Store results
+            run_result = {
+                "timestamp": datetime.now().isoformat(),
+                "benchmark": benchmark,
+                "model": model_name,
+                "command": command,
+            }
+            if problems_file:
+                run_result["problems_file"] = problems_file
+
+            run_result["results"] = {
+                "score": score,
+                "time_taken": duration,
+                **details
+            }
+
+            # Update benchmark_results.json
+            if os.path.exists(RESULTS_FILE):
+                with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            else:
+                data = {"runs": []}
+
+            data["runs"].append(run_result)
+
+            with open(RESULTS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+
+            print(f"  ✓ Recovered: {score:.1f}% (duration: {duration:.0f}s)")
+
+            # Update README and commit
+            _post_job(run_result, readme_updater, do_readme, do_plot, do_commit)
+
+        except Exception as exc:
+            print(f"  ✗ Failed to recover {result_file}: {exc}", file=sys.stderr)
+
+    print()
+
+
 def run_queue(jobs_dir: str, server: ServerManager, readme_updater: ReadmeUpdater,
               dry_run: bool = False, watch: bool = False,
               do_readme: bool = True, do_plot: bool = True, do_commit: bool = True):
@@ -362,6 +486,9 @@ def run_queue(jobs_dir: str, server: ServerManager, readme_updater: ReadmeUpdate
         print(f"\nQueue: {len(file_jobs)} file(s), {total_jobs} job(s)\n")
         _print_dry_run(file_jobs)
         return
+
+    # Recover any orphaned runs on startup
+    recover_orphaned_runs(readme_updater, do_readme, do_plot, do_commit)
 
     done_dir = str(Path(jobs_dir) / "done")
     failed_dir = str(Path(jobs_dir) / "failed")
