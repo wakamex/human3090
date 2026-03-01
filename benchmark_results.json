@@ -6016,21 +6016,6 @@
           "leetcode/weekly-contest-444/3777"
         ]
       }
-    },
-    {
-      "timestamp": "2026-03-01T01:55:00.787872",
-      "benchmark": "lcb",
-      "model": "OpenCodeReasoning-Nemotron-1.1-7B.i1-Q4/K_M",
-      "command": "bench_runner --model OpenCodeReasoning-Nemotron-1.1-7B.i1-Q4/K_M --benchmark lcb --problems-file test5.jsonl",
-      "problems_file": "test5.jsonl",
-      "results": {
-        "score": 0,
-        "time_taken": 0,
-        "total_passed": 0,
-        "total_problems": 0,
-        "difficulty_scores": {},
-        "failed_tasks": []
-      }
     }
   ]
 }

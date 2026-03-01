@@ -73,7 +73,6 @@ Unless otherwise specified:
 | DeepSeek            | DeepSeek-R1-Distill-Qwen-14B-Q6/K_L                            | LCBv6   |      34.8%  |  33265.24s |
 | mistralai/Mistral   | mistralai/Mistral-Small-3.1-24B-Instruct-2503-Q6_K_L           | LCBv6   |      39.3%  |   1909.46s |
 | OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-14B.i1-Q4/K_M                   | LCBv6   |      14.9%  |  32695.36s |
-| OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-7B.i1-Q4/K_M                    | LCBv5   |       0.0%  |      0.00s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
