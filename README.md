@@ -70,6 +70,7 @@ Unless otherwise specified:
 | agentica            | agentica-org_DeepCoder-14B-Preview-Q6_K_L, `max-tokens=10000`, `context-size=32768` | LCBv5   |       8.8%  |  27151.90s |
 | agentica            | agentica-org_DeepCoder-14B-Preview-Q6_K_L, `max-tokens=10000`, `context-size=32768` | LCBv6   |      16.4%  |  28325.10s |
 | DeepSeek            | DeepSeek-R1-Distill-Qwen-14B-Q6_K_L, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      30.8%  |  32852.81s |
+| DeepSeek            | DeepSeek-R1-Distill-Qwen-14B-Q6/K_L                            | LCBv6   |      34.8%  |  33265.24s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
