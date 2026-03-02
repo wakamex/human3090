@@ -55,6 +55,10 @@ class ServerManager:
             "-ngl", str(job.gpu_layers),
             "-c", str(job.context_size),
         ]
+        if job.enable_thinking is not None:
+            import json
+            cmd.extend(["--chat-template-kwargs",
+                         json.dumps({"enable_thinking": job.enable_thinking})])
         print(f"  Starting server: {' '.join(cmd)}")
         self._process = subprocess.Popen(
             cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL

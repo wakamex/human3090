@@ -28,6 +28,8 @@ class Job:
     problems_file: str = "test5.jsonl"
     start_date: str | None = None
     end_date: str | None = None
+    # Server-side options
+    enable_thinking: bool | None = None  # None = model default, True/False = override
 
     @property
     def model_shortname(self) -> str:
@@ -42,7 +44,7 @@ class Job:
 
     def server_key(self) -> tuple:
         """Jobs with the same server_key can reuse a running server."""
-        return (self.model, self.gpu_layers, self.context_size)
+        return (self.model, self.gpu_layers, self.context_size, self.enable_thinking)
 
     def job_id(self) -> str:
         """Human-readable identifier for this job."""
