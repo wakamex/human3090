@@ -74,6 +74,7 @@ Unless otherwise specified:
 | mistralai/Mistral   | mistralai/Mistral-Small-3.1-24B-Instruct-2503-Q6_K_L           | LCBv6   |      39.3%  |   1909.46s |
 | OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-14B.i1-Q4/K_M                   | LCBv6   |      14.9%  |  32695.36s |
 | OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-14B.i1-Q4_K_M, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      16.1%  |  33253.31s |
+| OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-14B.i1-Q4_K_M, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv6   |      15.3%  |  32732.98s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
