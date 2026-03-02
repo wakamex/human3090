@@ -291,13 +291,18 @@ def _git_commit(run_result: Dict[str, Any], job_file_moved: bool = False):
     msg = f"add {model} {benchmark_id} results ({score:.1f}%)"
 
     try:
-        # Stage tracked result files and job file if moved
+        # Stage tracked result files
         files_to_add = [f for f in TRACKED_FILES if os.path.exists(f)]
-        if job_file_moved:
-            files_to_add.append("jobs/")
-        if not files_to_add:
+        if not files_to_add and not job_file_moved:
             return
-        subprocess.run(["git", "add"] + files_to_add, check=True, capture_output=True)
+
+        # Stage result files
+        if files_to_add:
+            subprocess.run(["git", "add"] + files_to_add, check=True, capture_output=True)
+
+        # Stage job file moves (including deletions from queued/)
+        if job_file_moved:
+            subprocess.run(["git", "add", "--all", "jobs/"], check=True, capture_output=True)
 
         # Check if there's anything staged
         result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
