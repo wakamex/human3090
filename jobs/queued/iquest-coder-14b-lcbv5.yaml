@@ -1,0 +1,10 @@
+# IQuest-Coder-V1-14B-Thinking — HF backend, LCBv5
+model: IQuestLab/IQuest-Coder-V1-14B-Thinking
+backend: hf
+benchmarks: [lcb]
+temperature: 1.0
+max_tokens: 10000
+top_p: 0.95
+top_k: 20
+problems_file: test5.jsonl
+save_raw: true

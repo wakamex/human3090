@@ -1,9 +1,10 @@
-"""Manages llama.cpp server lifecycle with smart restart logic."""
+"""Manages llama.cpp / HF server lifecycle with smart restart logic."""
 
 import json
 import os
 import signal
 import subprocess
+import sys
 import time
 import urllib.request
 from urllib.error import HTTPError, URLError
@@ -41,24 +42,30 @@ class ServerManager:
         self._current_key = key
 
     def _start(self, job) -> None:
-        """Start llama-server with the given config."""
-        if not os.path.exists(self.server_path):
-            raise FileNotFoundError(f"Server not found at {self.server_path}")
-
+        """Start the appropriate server backend for this job."""
         # Kill anything already on our port (stale server, manual run, etc.)
         self._kill_port_owner()
 
-        cmd = [
-            self.server_path,
-            "-m", job.model,
-            "--port", str(self.port),
-            "-ngl", str(job.gpu_layers),
-            "-c", str(job.context_size),
-        ]
-        if job.enable_thinking is not None:
-            import json
-            cmd.extend(["--chat-template-kwargs",
-                         json.dumps({"enable_thinking": job.enable_thinking})])
+        if job.backend == "hf":
+            cmd = [
+                sys.executable, "-m", "human3090.serve_hf",
+                job.model, "--port", str(self.port),
+                "--trust-remote-code",
+            ]
+        else:
+            if not os.path.exists(self.server_path):
+                raise FileNotFoundError(f"Server not found at {self.server_path}")
+            cmd = [
+                self.server_path,
+                "-m", job.model,
+                "--port", str(self.port),
+                "-ngl", str(job.gpu_layers),
+                "-c", str(job.context_size),
+            ]
+            if job.enable_thinking is not None:
+                cmd.extend(["--chat-template-kwargs",
+                             json.dumps({"enable_thinking": job.enable_thinking})])
+
         print(f"  Starting server: {' '.join(cmd)}")
         self._process = subprocess.Popen(
             cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL

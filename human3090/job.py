@@ -14,6 +14,7 @@ class Job:
 
     model: str
     benchmark: str
+    backend: str = "llama"  # "llama" or "hf"
     gpu_layers: int = 80
     context_size: int = 4096
     temperature: float = 0.0
@@ -45,7 +46,9 @@ class Job:
 
     def server_key(self) -> tuple:
         """Jobs with the same server_key can reuse a running server."""
-        return (self.model, self.gpu_layers, self.context_size, self.enable_thinking)
+        if self.backend == "hf":
+            return ("hf", self.model)
+        return ("llama", self.model, self.gpu_layers, self.context_size, self.enable_thinking)
 
     def job_id(self) -> str:
         """Human-readable identifier for this job."""
