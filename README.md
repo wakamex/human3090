@@ -76,6 +76,7 @@ Unless otherwise specified:
 | OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-14B.i1-Q4_K_M, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      16.1%  |  33253.31s |
 | OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-14B.i1-Q4_K_M, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv6   |      15.3%  |  32732.98s |
 | OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-7B.i1-Q4_K_M, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      18.6%  |  14692.69s |
+| OpenCodeReasoning   | OpenCodeReasoning-Nemotron-1.1-7B.i1-Q4_K_M, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv6   |      25.1%  |  14032.87s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
