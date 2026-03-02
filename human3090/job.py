@@ -102,7 +102,7 @@ def load_queue_dir(jobs_dir: str = "jobs") -> list[tuple[Path, list[Job]]]:
         (Path(jobs_dir) / subdir).mkdir(parents=True, exist_ok=True)
 
     results = []
-    for yaml_file in sorted(queued_dir.glob("*.yaml")):
+    for yaml_file in sorted(queued_dir.glob("*.yaml"), key=lambda p: p.stat().st_mtime):
         jobs = _parse_job_file(yaml_file)
         results.append((yaml_file, jobs))
 
@@ -113,11 +113,12 @@ def next_queued_file(jobs_dir: str = "jobs") -> tuple[Path, list[Job]] | None:
     """Return the next YAML file from queued/, or None if empty.
 
     Called in a loop so the queue picks up new files dropped in mid-run.
+    Files are sorted by modification time (FIFO — oldest first).
     """
     queued_dir = Path(jobs_dir) / "queued"
     if not queued_dir.exists():
         return None
-    for yaml_file in sorted(queued_dir.glob("*.yaml")):
+    for yaml_file in sorted(queued_dir.glob("*.yaml"), key=lambda p: p.stat().st_mtime):
         return (yaml_file, _parse_job_file(yaml_file))
     return None
 
