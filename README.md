@@ -112,3 +112,5 @@ Deathloop is a response over 15k chars
 | Deepseek-R1        | OpenRouter. "Don't respond with anything but code"             |     79.3%  |   9819.20s |
 | Deepseek-R1        | api.deepseek.com                                               |     97.6%  |   7625.37s |
 | o3-mini            |                                                                |     96.3%  |   1140.21s |
+
+[![Star History Chart](https://api.gitrep.fyi/v1/star-history.svg?repos=wakamex%2Fhuman3090)](https://gitrep.fyi/history?compare=wakamex/human3090)
