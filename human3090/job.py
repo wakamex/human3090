@@ -19,6 +19,7 @@ class Job:
     temperature: float = 0.0
     top_p: float = 0.9
     min_p: float = 0.1
+    top_k: int | None = None
     max_tokens: int = 1000
     start_problem: int = 1
     end_problem: int | None = None

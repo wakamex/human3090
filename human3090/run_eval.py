@@ -180,7 +180,7 @@ def hf(prompt, model, temperature=0.8, task_id=None, end_after_n_codeblocks=None
     completion_stream = client.text_generation(prompt=prompt, stream=True, max_new_tokens=1_000, temperature=temperature)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id, end_after_n_codeblocks=end_after_n_codeblocks, framework="hf")
 
-def make_kwargs(temperature=0.8, frequency_penalty=None, presence_penalty=None, top_p=None, min_p=None):
+def make_kwargs(temperature=0.8, frequency_penalty=None, presence_penalty=None, top_p=None, min_p=None, top_k=None):
     kwargs = {"temperature": temperature}
     if presence_penalty is not None:
         kwargs["presence_penalty"] = presence_penalty
@@ -188,7 +188,14 @@ def make_kwargs(temperature=0.8, frequency_penalty=None, presence_penalty=None, 
         kwargs["frequency_penalty"] = frequency_penalty
     if top_p is not None:
         kwargs["top_p"] = top_p
-    # min_p is intentionally not added to kwargs as it's not supported by the OpenAI client's create method
+    # min_p and top_k are not in the OpenAI API spec but llama.cpp supports them via extra_body
+    extra_body = {}
+    if min_p is not None:
+        extra_body["min_p"] = min_p
+    if top_k is not None:
+        extra_body["top_k"] = top_k
+    if extra_body:
+        kwargs["extra_body"] = extra_body
     return kwargs
 
 def make_kwargs_o3(frequency_penalty=None, presence_penalty=None):
@@ -210,12 +217,12 @@ def together(prompt, model, system=None, task_id=None, temperature=0.8, frequenc
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=1_000, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
-def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", temperature=DEFAULT_VALUES["--temperature"], top_p=DEFAULT_VALUES["--top-p"], min_p=DEFAULT_VALUES["--min-p"], max_tokens=DEFAULT_VALUES["--max-tokens"], frequency_penalty=None, presence_penalty=None, task_id=None):
+def ai(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", key="na", temperature=DEFAULT_VALUES["--temperature"], top_p=DEFAULT_VALUES["--top-p"], min_p=DEFAULT_VALUES["--min-p"], top_k=None, max_tokens=DEFAULT_VALUES["--max-tokens"], frequency_penalty=None, presence_penalty=None, task_id=None):
     client = OpenAI(base_url=url, api_key=key)
     messages = [{"role": "user", "content": prompt}]
     if system:
         messages = [{"role": "system", "content": system}] + messages
-    kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty, top_p=top_p, min_p=min_p)
+    kwargs = make_kwargs(temperature=temperature, frequency_penalty=frequency_penalty, presence_penalty=presence_penalty, top_p=top_p, min_p=min_p, top_k=top_k)
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, max_tokens=max_tokens, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
@@ -228,7 +235,7 @@ def ai_o3(prompt, system=None, url="http://127.0.0.1:8083/v1", model="llama!", k
     completion_stream = client.chat.completions.create(model=model, messages=messages, stream=True, **kwargs)
     return parse_completion_stream(completion_stream=completion_stream, prompt=prompt, task_id=task_id)
 
-def main(model, temperature, top_p, min_p, preamble = "Please continue to complete the function.\n```python\n", max_tokens = 1_000, start_problem = 1, end_problem = None):
+def main(model, temperature, top_p, min_p, top_k=None, preamble = "Please continue to complete the function.\n```python\n", max_tokens = 1_000, start_problem = 1, end_problem = None):
     # Get model shortname (e.g. 'smollm2-1.7b-instruct-q4_k_m' from 'smollm2-1.7b-instruct-q4_k_m.gguf')
     model_shortname = os.path.splitext(os.path.basename(model))[0]
     problems = read_problems()
@@ -238,7 +245,7 @@ def main(model, temperature, top_p, min_p, preamble = "Please continue to comple
     for task_id in subset:
         raw_prompt = problems[task_id]["prompt"]
         prompt = preamble + raw_prompt
-        raw_answer = ai(prompt=prompt,model=model,temperature=temperature,top_p=top_p,min_p=min_p,max_tokens=max_tokens,task_id=task_id)
+        raw_answer = ai(prompt=prompt,model=model,temperature=temperature,top_p=top_p,min_p=min_p,top_k=top_k,max_tokens=max_tokens,task_id=task_id)
 
         # sanitize answer, and append it to the jsonl file
         with open(f"{model_shortname}_human_eval.jsonl", "a", encoding="utf-8") as f:
@@ -252,6 +259,7 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=float(DEFAULT_VALUES["--temperature"]), help="Temperature for sampling")
     parser.add_argument("--top-p", type=float, default=float(DEFAULT_VALUES["--top-p"]), help="Top-p for sampling")
     parser.add_argument("--min-p", type=float, default=float(DEFAULT_VALUES["--min-p"]), help="Minimum p for sampling")
+    parser.add_argument("--top-k", type=int, default=None, help="Top-k for sampling")
     parser.add_argument("--preamble", default="Please continue to complete the function.\n```python\n", help="Optional preamble text")
     parser.add_argument("--max-tokens", type=int, default=int(DEFAULT_VALUES["--max-tokens"]), help="Maximum tokens per completion")
     parser.add_argument("--start-problem", type=int, default=int(DEFAULT_VALUES["--start-problem"]), help="Problem index to start from (1-based)")
@@ -264,6 +272,7 @@ if __name__ == "__main__":
         temperature=args.temperature,
         top_p=args.top_p,
         min_p=args.min_p,
+        top_k=args.top_k,
         preamble=args.preamble,
         max_tokens=args.max_tokens,
         start_problem=args.start_problem,

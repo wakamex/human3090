@@ -81,6 +81,7 @@ def main(model: str,
          max_tokens: int = 1_000,
          top_p: float = 0.9,
          min_p: float = 0.1,
+         top_k: int = None,
          start_problem: int = 1,
          end_problem: int = None,
          problems_file: str = "test5.jsonl",
@@ -130,7 +131,7 @@ def main(model: str,
 
         url = "http://127.0.0.1:8083/v1"
         try:
-            raw_answer = ai(prompt=prompt, url=url, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, min_p=min_p, task_id=task_id)
+            raw_answer = ai(prompt=prompt, url=url, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, min_p=min_p, top_k=top_k, task_id=task_id)
         except Exception as e:
             print(f"Error on {task_id}: {e}")
             raw_answer = ""
@@ -165,6 +166,7 @@ def main(model: str,
         'max_tokens': max_tokens,
         'top_p': top_p,
         'min_p': min_p,
+        'top_k': top_k,
         'problems_file': problems_file,
         'timestamp': datetime.now().isoformat()
     }
@@ -186,6 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--end-date", help="End date for LCB problems (YYYY-MM-DD)")
     parser.add_argument("--top-p", type=float, default=0.9, help="Top-p for sampling")
     parser.add_argument("--min-p", type=float, default=0.1, help="Min-p for sampling")
+    parser.add_argument("--top-k", type=int, default=None, help="Top-k for sampling")
     parser.add_argument("--save-raw", action="store_true", help="Save raw model responses for debugging")
 
     args = parser.parse_args()
@@ -201,5 +204,6 @@ if __name__ == "__main__":
         end_date=args.end_date,
         top_p=args.top_p,
         min_p=args.min_p,
+        top_k=args.top_k,
         save_raw=args.save_raw
     )

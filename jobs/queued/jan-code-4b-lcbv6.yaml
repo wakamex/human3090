@@ -1,0 +1,12 @@
+# Jan-code-4b Q4_K_M — Qwen3-4B fine-tune, claims LCBv6 51%
+model: /mnt/raid5/models/Jan-code-4b-Q4_K_M.gguf
+benchmarks: [lcb]
+temperature: 0.7
+max_tokens: 10000
+context_size: 32768
+gpu_layers: 80
+top_p: 0.8
+min_p: 0.0
+top_k: 20
+problems_file: test6.jsonl
+save_raw: true

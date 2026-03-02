@@ -154,6 +154,7 @@ def _build_benchmark_cmd(job: Job) -> list[str]:
     optional = {
         "--preamble": job.preamble,
         "--end-problem": job.end_problem,
+        "--top-k": job.top_k,
     }
 
     if job.benchmark == "lcb":
@@ -192,6 +193,8 @@ def _reconstruct_command(job: Job) -> str:
         parts.extend(["--end-problem", str(job.end_problem)])
     if job.preamble:
         parts.extend(["--preamble", job.preamble])
+    if job.top_k is not None:
+        parts.extend(["--top-k", str(job.top_k)])
     if job.save_raw:
         parts.append("--save-raw")
     if job.benchmark == "lcb" and job.problems_file != "test5.jsonl":
