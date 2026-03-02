@@ -14,6 +14,17 @@ dependencies = [
     "together>=1.5.5",
 ]
 
+[project.optional-dependencies]
+hf = [
+    "torch>=2.0",
+    "transformers>=4.50,<4.54",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "bitsandbytes>=0.43",
+    "sentencepiece>=0.2",
+    "accelerate>=0.30",
+]
+
 [project.scripts]
 bench_runner = "human3090.bench_runner:main"
 start_human_daemon = "human3090.daemon:start"
