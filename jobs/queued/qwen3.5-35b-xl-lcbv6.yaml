@@ -1,5 +1,5 @@
-# QwQ-32B — reasoning model, LCBv6
-model: /seagate/models/QwQ-32B-Q4_K_M.gguf
+# Qwen3.5-35B-A3B UD-Q4_K_XL — SOTA Q4 quant, LCBv6 (with thinking)
+model: /mnt/raid5/models/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf
 benchmarks: [lcb]
 temperature: 0.6
 max_tokens: 10000
@@ -10,3 +10,4 @@ top_k: 20
 min_p: 0.0
 problems_file: test6.jsonl
 save_raw: true
+enable_thinking: true

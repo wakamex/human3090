@@ -6,6 +6,7 @@ max_tokens: 10000
 context_size: 32768
 gpu_layers: 80
 top_p: 0.95
+top_k: 20
 min_p: 0.0
 save_raw: true
 enable_thinking: true
