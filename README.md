@@ -81,6 +81,7 @@ Unless otherwise specified:
 | Qwen2.5             | Qwen2.5-Coder-32B-Instruct-Q4_K_M                              | LCBv5   |      46.0%  |   2195.34s |
 | Qwen2.5             | Qwen2.5-Coder-32B-Instruct-Q4_K_M                              | LCBv6   |      44.7%  |   2246.69s |
 | Qwen3.5             | Qwen3.5-27B-Q4_K_M, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      35.1%  |  45214.12s |
+| Qwen3.5             | Qwen3.5-35B-A3B-UD-Q4_K_XL, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      35.8%  |  15681.84s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
