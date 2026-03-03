@@ -57,6 +57,7 @@ Unless otherwise specified:
 | Devstral              | Devstral-Small-2505-Q4_K_M, `start-problem=163`                                  |      90.2%  |  42544.20s |
 | Qwen3.5-27B           | Qwen3.5-27B-Q4_K_M, `max-tokens=10000`                                           |      98.2%  |   3953.13s |
 | Qwen3.5-35B-A3B       | Qwen3.5-35B-A3B-Q4_K_M (MoE, 3B active), `max-tokens=10000`                      |      96.3%  |   1289.29s |
+| Qwen3.5             | Qwen3.5-35B-A3B-UD-Q4_K_XL, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` |      97.0%  |   1403.61s |
 
 ## LiveCodeBench
 
