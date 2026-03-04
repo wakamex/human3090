@@ -82,9 +82,28 @@ def _parse_job_file(path: Path) -> list[Job]:
             for key, value in lcb_config.items():
                 if key in job_field_names:
                     job_kwargs[key] = value
-        jobs.append(Job(**job_kwargs))
+        job = Job(**job_kwargs)
+        _validate_job(job, path)
+        jobs.append(job)
 
     return jobs
+
+
+THINKING_MAX_TOKENS = 32000
+
+
+def _validate_job(job: Job, path: Path) -> None:
+    """Warn about likely misconfiguration."""
+    if job.enable_thinking and job.max_tokens < THINKING_MAX_TOKENS:
+        print(f"WARNING: {path.name}: thinking model with max_tokens={job.max_tokens} "
+              f"(should be {THINKING_MAX_TOKENS})")
+    # Heuristic: model name suggests thinking but enable_thinking not set
+    thinking_hints = ["Thinking", "DeepCoder", "DeepSeek-R1", "Nemotron", "QwQ"]
+    model_name = job.model_shortname
+    if any(h.lower() in model_name.lower() for h in thinking_hints):
+        if job.max_tokens < THINKING_MAX_TOKENS:
+            print(f"WARNING: {path.name}: {model_name} looks like a thinking model "
+                  f"but max_tokens={job.max_tokens} (should be {THINKING_MAX_TOKENS})")
 
 
 def load_queue_dir(jobs_dir: str = "jobs") -> list[tuple[Path, list[Job]]]:

@@ -54,13 +54,8 @@ def sanitize_answer(raw_answer):
     if "<think>" in raw_answer and "</think>" in raw_answer:
         raw_answer = raw_answer.split("</think>", 1)[1].strip()
     elif "<think>" in raw_answer:
-        # Unclosed think tag - only salvage if there's a proper code block
-        # (loose def/class in thinking text are just reasoning fragments, not runnable code)
-        after_think = raw_answer.rsplit("<think>", 1)[1]
-        if "```python" in after_think:
-            raw_answer = after_think
-        else:
-            return ""
+        # Unclosed think tag - model didn't finish thinking, fail it
+        return ""
 
     # Try to extract code from markdown code blocks
     if "```python" in raw_answer and "```" in raw_answer.split("```python", 1)[1]:

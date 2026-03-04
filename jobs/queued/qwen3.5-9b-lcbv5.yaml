@@ -2,7 +2,7 @@
 model: /mnt/raid5/models/Qwen3.5-9B-UD-Q4_K_XL.gguf
 benchmarks: [lcb]
 temperature: 0.6
-max_tokens: 10000
+max_tokens: 32000
 context_size: 32768
 gpu_layers: 80
 top_p: 0.95

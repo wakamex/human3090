@@ -3,7 +3,7 @@ model: IQuestLab/IQuest-Coder-V1-14B-Thinking
 backend: hf
 benchmarks: [human_eval]
 temperature: 1.0
-max_tokens: 10000
+max_tokens: 32000
 top_p: 0.95
 top_k: 20
 save_raw: true
