@@ -86,6 +86,7 @@ Unless otherwise specified:
 | Jan                 | Jan-code-4b-Q4_K_M, `temperature=0.7`, `max-tokens=10000`, `top-p=0.8`, `min-p=0.0`, `context-size=32768` | LCBv6   |      42.5%  |   5814.66s |
 | Jan                 | Jan-code-4b-Q8_0, `temperature=0.7`, `max-tokens=10000`, `top-p=0.8`, `min-p=0.0`, `context-size=32768` | LCBv6   |      37.6%  |   6616.07s |
 | IQuest              | IQuest-Coder-V1-14B-Thinking, `temperature=1.0`, `max-tokens=32000`, `top-p=0.95` | LCBv5   |       1.8%  |   6915.48s |
+| IQuest              | IQuest-Coder-V1-14B-Thinking, `temperature=1.0`, `max-tokens=32000`, `top-p=0.95` | LCBv6   |       0.0%  |    238.64s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
