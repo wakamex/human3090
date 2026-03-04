@@ -83,6 +83,7 @@ Unless otherwise specified:
 | Qwen3.5             | Qwen3.5-27B-Q4_K_M, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      35.1%  |  45214.12s |
 | Qwen3.5             | Qwen3.5-35B-A3B-UD-Q4_K_XL, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv5   |      35.8%  |  15681.84s |
 | Qwen3.5             | Qwen3.5-35B-A3B-UD-Q4_K_XL, `temperature=0.6`, `max-tokens=10000`, `context-size=32768` | LCBv6   |      33.3%  |  16048.97s |
+| Jan                 | Jan-code-4b-Q4_K_M, `temperature=0.7`, `max-tokens=10000`, `top-p=0.8`, `min-p=0.0`, `context-size=32768` | LCBv6   |      42.5%  |   5814.66s |
 
 ## DeepSeek-R1 Distilled HumanEval Results
 
